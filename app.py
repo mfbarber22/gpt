@@ -4,7 +4,7 @@ from huggingface_hub import InferenceClient
 
 client = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
 
-system_instructions = "[SYSTEM] You will be provided with text, and your task is to classify task tasks are (text generation, image generation, pdf chat, image text to text, image classification, summarization, translation , tts) answer with only task do not say anything else and stop as soon as possible. [USER]"
+system_instructions = "[SYSTEM] You will be provided with text, and your task is to classify task tasks are (text generation, image generation, pdf chat, image text to text, image classification, tts) answer with only task type that prompt user give, do not say anything else and stop as soon as possible. Example: User- What is freiction , BOT - text generation [USER]"
 
 
 def classify_task(prompt):
