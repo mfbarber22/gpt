@@ -20,7 +20,7 @@ def classify_task(prompt):
 # Create the Gradio interface
 iface = gr.Interface(
     fn=classify_task,
-    inputs=gr.inputs.Textbox(lines=2, placeholder="Enter your prompt here..."),
+    inputs=gr.Textbox(lines=2, placeholder="Enter your prompt here..."),
     outputs='text',
     title='AI Task Classifier Chatbot',
     description='This chatbot classifies your prompt into different AI tasks.'
