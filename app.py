@@ -10,22 +10,23 @@ system_instructions = "You will be provided with text, and your task is to class
 def classify_task(prompt):
     generate_kwargs = dict(
         temperature=0.5,
-        max_new_tokens=1024,
-        top_p=0.95,
-        repetition_penalty=1.0,
+        max_new_tokens=5,
+        top_p=0.7,
+        repetition_penalty=1.2,
         do_sample=True,
         seed=42,
     )
 
-    formatted_prompt = system_instructions + prompt + "[/INST]"
+    formatted_prompt = system_instructions + prompt
     stream = client.text_generation(
         formatted_prompt, **generate_kwargs, stream=True, details=True, return_full_text=False)
     output = ""
 
     for response in stream:
-        output += response.token.text
-        yield output
-    return output        
+        if not response.token.text == "</s>":
+            output += response.token.text
+
+    return output       
 
 # Create the Gradio interface
 with gr.Blocks() as demo:
