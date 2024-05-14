@@ -43,14 +43,24 @@ def classify_task2(prompt):
         return 'Unknown Task'
 
 # Create the Gradio interface
-iface = gr.Interface(
-    fn=classify_task,
-    inputs=gr.Textbox(lines=2, placeholder="Enter your prompt here..."),
-    outputs='text',
-    title='AI Task Classifier Chatbot',
-    description='This chatbot classifies your prompt into different AI tasks.'
-)
+with gr.Blocks() as demo:
+    gr.HTML("""
+<center><h1>Emoji Translator 🤗😻</h1>
+<h3>Translate any text into emojis, and vice versa!</h3>
+</center>
+""")
+
+    gr.Markdown("""
+# Text to Emoji 📖➡️😻
+""")
+    with gr.Row():
+        text_uesr_input = gr.Textbox(label="Enter text 📚")
+        output = gr.Textbox(label="Translation")
+    with gr.Row():
+        translate_btn = gr.Button("Translate 🚀")
+        translate_btn.click(fn=classify_task, inputs=text_uesr_input,
+                            outputs=output, api_name="translate_text")
 
 # Launch the app
 if __name__ == "__main__":
-    iface.launch()
+    demo.launch()
