@@ -2,9 +2,9 @@ import re
 import gradio as gr
 from huggingface_hub import InferenceClient
 
-client = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
+client2 = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
 
-system_instructions = "[SYSTEM] You are the Best AI, you can solve complex problems you answer in short , simple and easy language.[USER]"
+system_instructions2 = "[SYSTEM] You are the Best AI, you can solve complex problems you answer in short , simple and easy language.[USER]"
 
 def text(prompt):
     generate_kwargs = dict(
@@ -16,8 +16,8 @@ def text(prompt):
         seed=42,
     )
 
-    formatted_prompt = system_instructions + prompt + "[BOT]"
-    stream = client.text_generation(
+    formatted_prompt = system_instructions2 + prompt + "[BOT]"
+    stream = client2.text_generation(
         formatted_prompt, **generate_kwargs, stream=True, details=True, return_full_text=False)
     output = ""
 
