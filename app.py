@@ -425,7 +425,7 @@ with gr.Blocks() as voice:
                 outputs=[output], live=True)
  
 with gr.Blocks(theme=theme, css="footer {visibility: hidden}textbox{resize:none}", title="GPT 4o DEMO") as demo:
-    gr.TabbedInterface([voice, img], ['💬 SuperChat','🗣️ Voice Chat', ])
+    gr.TabbedInterface([img, voice], ['💬 SuperChat','🗣️ Voice Chat', ])
 
 
 demo.launch()
