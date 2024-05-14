@@ -51,8 +51,6 @@ def classify_task(prompt):
         if not response.token.text == "</s>":
             output += response.token.text
 
-    yield output       
-
     if 'text' in output.lower():
         user = text(prompt)
     elif 'image' in output.lower():
