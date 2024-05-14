@@ -1,12 +1,13 @@
 ---
-title: GPT 4o
-emoji: 📈
+title: OpenGPT 4o
+emoji: 🔥
 colorFrom: blue
 colorTo: indigo
 sdk: gradio
 sdk_version: 4.31.1
 app_file: app.py
-pinned: false
+pinned: true
+short_description: GPT 4o like bot before its release
 ---
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
