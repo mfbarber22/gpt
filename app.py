@@ -4,6 +4,32 @@ from huggingface_hub import InferenceClient
 
 client = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
 
+system_instructions = "[SYSTEM] You are the Best AI, you can solve complex problems you answer in short , simple and easy language.[USER]"
+
+def text(prompt):
+    generate_kwargs = dict(
+        temperature=0.5,
+        max_new_tokens=5,
+        top_p=0.7,
+        repetition_penalty=1.2,
+        do_sample=True,
+        seed=42,
+    )
+
+    formatted_prompt = system_instructions + prompt + "[BOT]"
+    stream = client.text_generation(
+        formatted_prompt, **generate_kwargs, stream=True, details=True, return_full_text=False)
+    output = ""
+
+    for response in stream:
+        if not response.token.text == "</s>":
+            output += response.token.text
+
+    return output  
+
+
+client = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
+
 system_instructions = "[SYSTEM] You will be provided with text, and your task is to classify task tasks are (text generation, image generation, tts) answer with only task type that prompt user give, do not say anything else and stop as soon as possible. Example: User- What is friction , BOT - text generation [USER]"
 
 def classify_task(prompt):
@@ -25,7 +51,17 @@ def classify_task(prompt):
         if not response.token.text == "</s>":
             output += response.token.text
 
-    return output       
+    yield output       
+
+    if 'text' in output.lower():
+        user = text(prompt)
+    elif 'image' in output.lower():
+        return 'Image Generation'
+    else:
+        return 'Unknown Task'
+
+
+
 
 # Create the Gradio interface
 with gr.Blocks() as demo:
