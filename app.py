@@ -4,7 +4,7 @@ from huggingface_hub import InferenceClient
 
 client = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
 
-system_instructions = """<s> [INST] You will be provided with text, and your task is to classify task tasks are (text generation, image generation, pdf chat, image text to text, image classification, summarization, translation , tts) """
+system_instructions = "You will be provided with text, and your task is to classify task tasks are (text generation, image generation, pdf chat, image text to text, image classification, summarization, translation , tts) answer with only task do not say anything else and stop as soon as possible."
 
 
 def classify_task(prompt):
@@ -24,35 +24,11 @@ def classify_task(prompt):
 
     for response in stream:
         output += response.token.text
-
-# Define the classification function
-def classify_task2(prompt):
-    # Here you would implement the logic to classify the prompt
-    # For example, using if-elif-else statements or a machine learning model
-    if 'generate text' in prompt.lower():
-        return 'Text Generation'
-    elif 'generate image' in prompt.lower():
-        return 'Image Generation'
-    elif 'pdf chat' in prompt.lower():
-        return 'PDF Chat'
-    elif 'image to text' in prompt.lower():
-        return 'Image Text to Text'
-    elif 'classify image' in prompt.lower():
-        return 'Image Classification'
-    else:
-        return 'Unknown Task'
+        yield output
+    return output        
 
 # Create the Gradio interface
 with gr.Blocks() as demo:
-    gr.HTML("""
-<center><h1>Emoji Translator 🤗😻</h1>
-<h3>Translate any text into emojis, and vice versa!</h3>
-</center>
-""")
-
-    gr.Markdown("""
-# Text to Emoji 📖➡️😻
-""")
     with gr.Row():
         text_uesr_input = gr.Textbox(label="Enter text 📚")
         output = gr.Textbox(label="Translation")
