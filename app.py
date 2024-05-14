@@ -50,12 +50,12 @@ def classify_task(prompt):
     for response in stream:
         if not response.token.text == "</s>":
             output += response.token.text
-                if 'text' in output.lower():
-                    user = text(prompt)
-                elif 'image' in output.lower():
-                    return 'Image Generation'
-                else:
-                    return 'Unknown Task'
+            if 'text' in output.lower():
+                user = text(prompt)
+            elif 'image' in output.lower():
+                return 'Image Generation'
+            else:
+                return 'Unknown Task'
 
 
 
