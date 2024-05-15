@@ -130,7 +130,7 @@ examples_path = os.path.dirname(__file__)
 EXAMPLES = [
     [
         {
-            "text": "Hy, who are you",
+            "text": "Hi, who are you",
         }
     ],
     [
