@@ -7,7 +7,7 @@ sdk: gradio
 sdk_version: 4.31.1
 app_file: app.py
 pinned: true
-short_description: GPT 4o like bot before its release
+short_description: GPT 4o like bot.
 ---
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
