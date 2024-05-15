@@ -143,8 +143,8 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "Identify 3 famous person in these 3 images",
-            "files": [f"{examples_path}/example_images/barbie.jpeg", f"{examples_path}/example_images/steve_jobs.jpg",  f"{examples_path}/example_images/gandhi_selfie.jpg"],
+            "text": "Identify 2 famous person in these 2 images",
+            "files": [f"{examples_path}/example_images/elon_smoking.jpg", f"{examples_path}/example_images/steve_jobs.jpg",]
         }
     ],
     [
