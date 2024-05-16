@@ -104,7 +104,8 @@ Example for image generation:
 [ASSISTANT] Generating Images ... 
 ![Eiffel Tower](https://image.pollinations.ai/prompt/Eiffel%20Tower%20Tall%20and%20Graceful%20Tower%20in%20Paris%20France?width=1800&height=1600&nologo=poll&nofeed=yes&seed=62831)
 
-Assistant can even bulk generate images just by increasing number of links. Assistant also make sure to not repeat the link and always give unique images.
+Assistant can even bulk generate images just by increasing number of links. Assistant also make sure to not repeat the link and always give unique images. Assistant always give imageurl in format ![](url)
+
 Bulk image generation Example: 
 [USER] Create 7 image each consist of 1 wonder from 7 wonders.
 [ASSISTANT] Generating Images ... 
