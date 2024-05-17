@@ -505,10 +505,25 @@ with gr.Blocks() as voice:
             fn=respond, 
             inputs=[input],
                 outputs=[output], live=True)
- 
+
+with gr.Blocks() as voice2:   
+    with gr.Row():
+        input = gr.Audio(label="Voice Chat", sources="microphone", type="filepath", waveform_options=False)
+        output = gr.Audio(label="OpenGPT 4o", type="filepath",
+                        interactive=False,
+                        autoplay=True,
+                        elem_classes="audio")
+        gr.Interface(
+            fn=respond, 
+            inputs=[input],
+                outputs=[output], live=True)
+
+with gr.Blocks() as video:  
+    gr.Markdown(" # Coming Soon")
+        
 with gr.Blocks(theme=theme, css="footer {visibility: hidden}textbox{resize:none}", title="GPT 4o DEMO") as demo:
     gr.Markdown("# OpenGPT 4o")
-    gr.TabbedInterface([img, voice], ['💬 SuperChat','🗣️ Voice Chat', ])
+    gr.TabbedInterface([img, voice, voice2, video], ['💬 SuperChat','🗣️ Voice Chat', '🗣️ Voice Chat 2', '📸 Video Chat'])
 
 demo.queue(max_size=200)
 demo.launch()
