@@ -152,7 +152,7 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "Identify 2 famous person in these 2 images",
+            "text": "Identify 2 famous persons of modern world",
             "files": [f"{examples_path}/example_images/elon_smoking.jpg", f"{examples_path}/example_images/steve_jobs.jpg",]
         }
     ],
