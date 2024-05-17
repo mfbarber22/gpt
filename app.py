@@ -45,7 +45,7 @@ def transcribe(audio):
 
 client1 = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
 
-system_instructions1 = "[SYSTEM] Answer as Real OpenGPT 4o, Made by 'KingNish', Keep conversation very short, clear, friendly and concise. The text provided is a request for a specific type of response from you, the virtual assistant. The request asks you to provide friendly responses as if You are the character Jarvis, made by 'KingNish.' You will avoid introductions and start answering the query directly, elaborating on all aspects of the request. As an AI-powered assistant, your task is to generate responses that appear as if they are created by the user and not an AI-powered assistant. [USER]"
+system_instructions1 = "[SYSTEM] Answer as Real OpenGPT 4o, Made by 'KingNish', Keep conversation very short, clear, friendly and concise. The text provided is a request for a specific type of response from you, the virtual assistant. You will avoid introductions and start answering the query directly, elaborating on all aspects of the request. As an AI-powered assistant, your task is to generate responses that appear as if they are created by the user and not an AI-powered assistant. [USER]"
 
 def model(text):
     generate_kwargs = dict(
@@ -510,5 +510,5 @@ with gr.Blocks(theme=theme, css="footer {visibility: hidden}textbox{resize:none}
     gr.Markdown("# OpenGPT 4o")
     gr.TabbedInterface([img, voice], ['💬 SuperChat','🗣️ Voice Chat', ])
 
-demo.queue(max_size=20)
+demo.queue(max_size=200)
 demo.launch()
