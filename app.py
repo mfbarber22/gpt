@@ -21,7 +21,7 @@ import io
 import datasets
 
 import gradio as gr
-from transformers import AutoProcessor, TextIteratorStreamer
+from transformers import AutoModel, AutoProcessor, TextIteratorStreamer
 from transformers import Idefics2ForConditionalGeneration
 import tempfile
 from streaming_stt_nemo import Model
@@ -30,17 +30,24 @@ import edge_tts
 import asyncio
 from transformers import pipeline
 
-oracle = pipeline(model="dandelin/vilt-b32-finetuned-vqa")
+model = AutoModel.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
+processor = AutoProcessor.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 
-async def answer_question(image, question):
-    response = oracle(question=question, image=image)
-    response2 = response[0]['answer']
-    answer2 = str(response2)
-    communicate = edge_tts.Communicate(answer2)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
-        tmp_path = tmp_file.name
-        await communicate.save(tmp_path)
-    yield tmp_path
+@spaces.GPU(duration=10, queue=False)
+def answer_question(image, prompt):
+    inputs = processor(text=[prompt], images=[image], return_tensors="pt")
+    with torch.inference_mode():
+         output = model.generate(
+            **inputs,
+            do_sample=False,
+            use_cache=True,
+            max_new_tokens=256,
+            eos_token_id=151645,
+            pad_token_id=processor.tokenizer.pad_token_id
+        )
+    prompt_len = inputs["input_ids"].shape[1]
+    decoded_text = processor.batch_decode(output[:, prompt_len:])[0]
+    return decoded_text
 
 from gradio import Image, Textbox
 
@@ -307,7 +314,7 @@ def extract_images_from_msg_list(msg_list):
     return all_images
 
 
-@spaces.GPU(duration=60, queue=False)
+@spaces.GPU(duration=30, queue=False)
 def model_inference(
     user_prompt,
     chat_history,
@@ -535,7 +542,7 @@ with gr.Blocks() as voice2:
                 outputs=[output], live=True)
 
 with gr.Blocks() as video:  
-    gr.Markdown(" ## Live Chat Beta")
+    gr.Markdown(" ## Live Chat")
     gr.Markdown("### Click camera option to update image")
     gr.Interface(
     fn=answer_question,
