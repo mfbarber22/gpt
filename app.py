@@ -28,6 +28,22 @@ from streaming_stt_nemo import Model
 from huggingface_hub import InferenceClient
 import edge_tts
 import asyncio
+from transformers import pipeline
+
+oracle = pipeline(model="dandelin/vilt-b32-finetuned-vqa")
+
+async def answer_question(image, question):
+    response = oracle(question=question, image=image)
+    response2 = response[0]['answer']
+    answer2 = str(response2)
+    communicate = edge_tts.Communicate(answer2)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+        tmp_path = tmp_file.name
+        await communicate.save(tmp_path)
+    yield tmp_path
+
+from gradio import Image, Textbox
+
 
 theme = gr.themes.Base(
     font=[gr.themes.GoogleFont('Libre Franklin'), gr.themes.GoogleFont('Public Sans'), 'system-ui', 'sans-serif'],
@@ -519,7 +535,13 @@ with gr.Blocks() as voice2:
                 outputs=[output], live=True)
 
 with gr.Blocks() as video:  
-    gr.Markdown(" # Coming Soon")
+    gr.Markdown(" ## Video Chat Beta")
+    gr.Markdown("### Click camera option to update image")
+    gr.Interface(
+    fn=answer_question,
+    inputs=[Image(type="filepath",sources="webcam", streaming=False), Textbox()],
+    outputs=[gr.Audio(autoplay=True)]
+)
         
 with gr.Blocks(theme=theme, css="footer {visibility: hidden}textbox{resize:none}", title="GPT 4o DEMO") as demo:
     gr.Markdown("# OpenGPT 4o")
