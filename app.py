@@ -535,7 +535,7 @@ with gr.Blocks() as voice2:
                 outputs=[output], live=True)
 
 with gr.Blocks() as video:  
-    gr.Markdown(" ## Video Chat Beta")
+    gr.Markdown(" ## Live Chat Beta")
     gr.Markdown("### Click camera option to update image")
     gr.Interface(
     fn=answer_question,
@@ -545,7 +545,7 @@ with gr.Blocks() as video:
         
 with gr.Blocks(theme=theme, css="footer {visibility: hidden}textbox{resize:none}", title="GPT 4o DEMO") as demo:
     gr.Markdown("# OpenGPT 4o")
-    gr.TabbedInterface([img, voice, voice2, video], ['💬 SuperChat','🗣️ Voice Chat', '🗣️ Voice Chat 2', '📸 Video Chat'])
+    gr.TabbedInterface([img, voice, video, voice2], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🗣️ Voice Chat 2'])
 
 demo.queue(max_size=200)
 demo.launch()
