@@ -34,8 +34,8 @@ model = AutoModel.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code
 processor = AutoProcessor.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 
 @spaces.GPU(duration=10, queue=False)
-def answer_question(image, prompt):
-    inputs = processor(text=[prompt], images=[image], return_tensors="pt")
+def answer_question(image3, prompt3):
+    inputs = processor(text=[prompt3], images=[image3], return_tensors="pt")
     with torch.inference_mode():
          output = model.generate(
             **inputs,
