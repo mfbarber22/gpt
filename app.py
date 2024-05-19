@@ -16,7 +16,7 @@ import torch
 from threading import Thread
 from typing import List, Dict, Union
 import urllib
-from PIL import Image
+import PIL.Image
 import io
 import datasets
 
@@ -227,12 +227,12 @@ def load_image_from_url(url):
     with urllib.request.urlopen(url) as response:
         image_data = response.read()
         image_stream = io.BytesIO(image_data)
-        image = Image.open(image_stream)
+        image = PIL.Image.open(image_stream)
         return image
 
 
 def img_to_bytes(image_path):
-    image = Image.open(image_path).convert(mode='RGB')
+    image = PIL.Image.open(image_path).convert(mode='RGB')
     buffer = io.BytesIO()
     image.save(buffer, format="JPEG")
     img_bytes = buffer.getvalue()
@@ -270,7 +270,7 @@ def format_user_prompt_with_im_history_and_system_conditioning(
         if turn_is_pure_media(turn):
             media = turn[0][0]
             resulting_messages[-1]["content"].append({"type": "image"})
-            resulting_images.append(Image.open(media))
+            resulting_images.append(PIL.Image.open(media))
         else:
             user_utterance, assistant_utterance = turn
             resulting_messages[-1]["content"].append(
@@ -300,7 +300,7 @@ def format_user_prompt_with_im_history_and_system_conditioning(
                 + [{"type": "text", "text": user_prompt["text"]}],
             }
         )
-        resulting_images.extend([Image.open(path) for path in user_prompt["files"]])
+        resulting_images.extend([PIL.Image.open(path) for path in user_prompt["files"]])
 
     return resulting_messages, resulting_images
 
