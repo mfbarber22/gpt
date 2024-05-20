@@ -34,8 +34,8 @@ model = AutoModel.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code
 processor = AutoProcessor.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 
 @spaces.GPU(duration=10, queue=False)
-def answer_question(image3, prompt3):
-    inputs = processor(text=[prompt3], images=[image3], return_tensors="pt")
+def generate_caption(image, prompt):
+    inputs = processor(text=[prompt], images=[image], return_tensors="pt")
     with torch.inference_mode():
          output = model.generate(
             **inputs,
@@ -45,11 +45,11 @@ def answer_question(image3, prompt3):
             eos_token_id=151645,
             pad_token_id=processor.tokenizer.pad_token_id
         )
+    
     prompt_len = inputs["input_ids"].shape[1]
     decoded_text = processor.batch_decode(output[:, prompt_len:])[0]
-    return decoded_text
 
-from gradio import Image, Textbox
+    yield decoded_text
 
 
 theme = gr.themes.Base(
@@ -545,10 +545,10 @@ with gr.Blocks() as video:
     gr.Markdown(" ## Live Chat")
     gr.Markdown("### Click camera option to update image")
     gr.Interface(
-    fn=answer_question,
-    inputs=[Image(type="filepath",sources="webcam", streaming=False), Textbox()],
-    outputs=[Textbox()]
-)
+        fn=generate_caption,
+        inputs=[gr.Image(type="pil", label="Upload Image"), gr.Textbox(label="Prompt", value="what he is doing")],
+        outputs=gr.Textbox(label="Answer"),
+    )
         
 with gr.Blocks(theme=theme, css="footer {visibility: hidden}textbox{resize:none}", title="GPT 4o DEMO") as demo:
     gr.Markdown("# OpenGPT 4o")
