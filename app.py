@@ -547,7 +547,7 @@ with gr.Blocks() as video:
     gr.Interface(
     fn=answer_question,
     inputs=[Image(type="filepath",sources="webcam", streaming=False), Textbox()],
-    outputs=[gr.Audio(autoplay=True)]
+    outputs=[Textbox()]
 )
         
 with gr.Blocks(theme=theme, css="footer {visibility: hidden}textbox{resize:none}", title="GPT 4o DEMO") as demo:
