@@ -52,8 +52,8 @@ def videochat(image3, prompt3):
     prompt_len = inputs["input_ids"].shape[1]
     decoded_text = processor.batch_decode(output[:, prompt_len:])[0]
     if decoded_text.endswith("<|im_end|>"):
-        decoded_text = decoded_text[:-18]
-    yield acc_text
+        decoded_text = decoded_text[:-10]
+    yield decoded_text
 
 theme = gr.themes.Base(
     font=[gr.themes.GoogleFont('Libre Franklin'), gr.themes.GoogleFont('Public Sans'), 'system-ui', 'sans-serif'],
@@ -537,7 +537,7 @@ with gr.Blocks() as voice2:
 with gr.Blocks() as video:  
     gr.Interface(
         fn=videochat,
-        inputs=[gr.Image(type="pil", label="Upload Image"), gr.Textbox(label="Prompt", value="what he is doing")],
+        inputs=[gr.Image(type="pil",sources="webcam", label="Upload Image"), gr.Textbox(label="Prompt", value="what he is doing")],
         outputs=gr.Textbox(label="Answer")
     )
         
