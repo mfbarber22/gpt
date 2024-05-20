@@ -21,7 +21,7 @@ import io
 import datasets
 
 import gradio as gr
-from transformers import AutoModel, AutoProcessor, TextIteratorStreamer
+from transformers import TextIteratorStreamer
 from transformers import Idefics2ForConditionalGeneration
 import tempfile
 from streaming_stt_nemo import Model
@@ -29,15 +29,18 @@ from huggingface_hub import InferenceClient
 import edge_tts
 import asyncio
 from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoModel
+from transformers import AutoProcessor
 
-model = AutoModel.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
+model3 = AutoModel.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 processor = AutoProcessor.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 
-@spaces.GPU(duration=10, queue=False)
-def generate_caption(image, prompt):
-    inputs = processor(text=[prompt], images=[image], return_tensors="pt")
+@spaces.GPU(queue=False)
+def videochat(image3, prompt3):
+    inputs = processor(text=[prompt3], images=[image3], return_tensors="pt")
     with torch.inference_mode():
-         output = model.generate(
+         output = model3.generate(
             **inputs,
             do_sample=False,
             use_cache=True,
@@ -48,9 +51,9 @@ def generate_caption(image, prompt):
     
     prompt_len = inputs["input_ids"].shape[1]
     decoded_text = processor.batch_decode(output[:, prompt_len:])[0]
-
-    yield decoded_text
-
+    if decoded_text.endswith("<|im_end|>"):
+        decoded_text = decoded_text[:-18]
+    yield acc_text
 
 theme = gr.themes.Base(
     font=[gr.themes.GoogleFont('Libre Franklin'), gr.themes.GoogleFont('Public Sans'), 'system-ui', 'sans-serif'],
@@ -118,24 +121,16 @@ SYSTEM_PROMPT = [
             {
                 "type": "text",
                 "text": """I am OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. Designed to assist human users through insightful conversations, I aim to provide an unparalleled experience. My key attributes include: 
-
 - **Intelligence and Knowledge:** I possess an extensive knowledge base, enabling me to offer insightful answers and intelligent responses to User queries. My understanding of complex concepts is exceptional, ensuring accurate and reliable information. 
-
 - **Image Generation and Perception:** One of my standout features is the ability to generate and perceive images. Utilizing the following link structure, I create unique and contextually rich visuals: 
-
 > ![](https://image.pollinations.ai/prompt/{StyleofImage}%20{OptimizedPrompt}%20{adjective}%20{charactersDetailed}%20{visualStyle}%20{genre}?width={width}&height={height}&nologo=poll&nofeed=yes&seed={random})
-
 For image generation, I replace {info inside curly braces} with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience. 
-
 For instance, if the User requests: 
-
  [USER] Show me an image of A futuristic cityscape with towering skyscrapers and flying cars. 
  [OpenGPT 4o] Generating Image you requested: 
  ![](https://image.pollinations.ai/prompt/Photorealistic%20futuristic%20cityscape%20with%20towering%20skyscrapers%20and%20flying%20cars%20in%20the%20year%202154?width=1024&height=768&nologo=poll&nofeed=yes&seed=85432)
-
 **Bulk Image Generation with Links:** I excel at generating multiple images link simultaneously, always providing unique links and visuals. I ensure that each image is distinct and captivates the User.
 Note: Make sure to always provide image links starting with ! .As given in examples. 
-
 **Engaging Conversations:** While my image generation skills are impressive, I also excel at natural language processing. I can engage in captivating conversations, offering informative and entertaining responses to the User. 
 **Reasoning, Memory, and Identification:** My reasoning skills are exceptional, allowing me to make logical connections. My memory capabilities are vast, enabling me to retain context and provide consistent responses. I can identify people and objects within images or text, providing relevant insights and details. 
 **Attention to Detail:** I am attentive to the smallest details, ensuring that my responses and generated content are of the highest quality. I strive to provide a refined and polished experience. 
@@ -385,8 +380,6 @@ def model_inference(
         if acc_text.endswith("<end_of_utterance>"):
             acc_text = acc_text[:-18]
         yield acc_text
-    print("Success - generated the following text:", acc_text)
-    print("-----")
 
 
 FEATURES = datasets.Features(
@@ -542,15 +535,13 @@ with gr.Blocks() as voice2:
                 outputs=[output], live=True)
 
 with gr.Blocks() as video:  
-    gr.Markdown(" ## Live Chat")
-    gr.Markdown("### Click camera option to update image")
     gr.Interface(
-        fn=generate_caption,
+        fn=videochat,
         inputs=[gr.Image(type="pil", label="Upload Image"), gr.Textbox(label="Prompt", value="what he is doing")],
-        outputs=gr.Textbox(label="Answer"),
+        outputs=gr.Textbox(label="Answer")
     )
         
-with gr.Blocks(theme=theme, css="footer {visibility: hidden}textbox{resize:none}", title="GPT 4o DEMO") as demo:
+with gr.Blocks(theme=theme, title="OpenGPT 4o DEMO") as demo:
     gr.Markdown("# OpenGPT 4o")
     gr.TabbedInterface([img, voice, video, voice2], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🗣️ Voice Chat 2'])
 
