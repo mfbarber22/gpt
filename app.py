@@ -393,10 +393,10 @@ FEATURES = datasets.Features(
 
 # Hyper-parameters for generation
 max_new_tokens = gr.Slider(
-    minimum=1024,
-    maximum=8192,
+    minimum=2048,
+    maximum=16000,
     value=4096,
-    step=1,
+    step=64,
     interactive=True,
     label="Maximum number of new tokens to generate",
 )
@@ -414,7 +414,7 @@ decoding_strategy = gr.Radio(
         "Greedy",
         "Top P Sampling",
     ],
-    value="Greedy",
+    value="Top P Sampling",
     label="Decoding strategy",
     interactive=True,
     info="Higher values is equivalent to sampling more low-probability tokens.",
@@ -517,28 +517,24 @@ with gr.Blocks() as voice:
             inputs=[input],
                 outputs=[output], live=True)
 
-with gr.Blocks() as voice2:   
-    with gr.Row():
-        input = gr.Audio(label="Voice Chat", sources="microphone", type="filepath", waveform_options=False)
-        output = gr.Audio(label="OpenGPT 4o", type="filepath",
-                        interactive=False,
-                        autoplay=True,
-                        elem_classes="audio")
-        gr.Interface(
-            fn=respond, 
-            inputs=[input],
-                outputs=[output], live=True)
-
 with gr.Blocks() as video:  
     gr.Interface(
         fn=videochat,
         inputs=[gr.Image(type="pil",sources="webcam", label="Upload Image"), gr.Textbox(label="Prompt", value="what he is doing")],
         outputs=gr.Textbox(label="Answer")
     )
-        
+
+with gr.Blocks() as image:
+    gr.Markdown("""# Work In Progress
+    Features in Image engine
+    1. A fully dedicated Work for Image Generation Only
+    2. Sequential Image Generation
+    3. Image Gen with various inputs Text and Image
+    4. Gonna add different types of image generator according to use""")
+
 with gr.Blocks(theme=theme, title="OpenGPT 4o DEMO") as demo:
     gr.Markdown("# OpenGPT 4o")
-    gr.TabbedInterface([img, voice, video, voice2], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🗣️ Voice Chat 2'])
+    gr.TabbedInterface([img, voice, video, image], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🖼 Image Engine'])
 
 demo.queue(max_size=200)
 demo.launch()
