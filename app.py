@@ -536,5 +536,5 @@ with gr.Blocks(theme=theme, title="OpenGPT 4o DEMO") as demo:
     gr.Markdown("# OpenGPT 4o")
     gr.TabbedInterface([img, voice, video, image], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🖼 Image Engine'])
 
-demo.queue(max_size=200)
+demo.queue(max_size=300)
 demo.launch()
