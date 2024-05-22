@@ -36,7 +36,7 @@ from transformers import AutoProcessor
 model3 = AutoModel.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 processor = AutoProcessor.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 
-@spaces.GPU(queue=False)
+@spaces.GPU(enable_queue=False)
 def videochat(image3, prompt3):
     inputs = processor(text=[prompt3], images=[image3], return_tensors="pt")
     with torch.inference_mode():
@@ -304,7 +304,7 @@ def extract_images_from_msg_list(msg_list):
     return all_images
 
 
-@spaces.GPU(duration=30, queue=False)
+@spaces.GPU(duration=30, enable_queue=False)
 def model_inference(
     user_prompt,
     chat_history,
@@ -454,7 +454,7 @@ output=gr.Textbox(label="Prompt")
 with gr.Blocks(
     fill_height=True,
     css=""".gradio-container .avatar-container {height: 40px width: 40px !important;} #duplicate-button {margin: auto; color: white; background: #f1a139; border-radius: 100vh; margin-top: 2px; margin-bottom: 2px;}""",
-) as img:
+) as chat:
 
     gr.Markdown("# Image Chat, Image Generation, Image classification and Normal Chat")
     with gr.Row(elem_id="model_selector_row"):
@@ -524,17 +524,19 @@ with gr.Blocks() as video:
         outputs=gr.Textbox(label="Answer")
     )
 
+with gr.Blocks() as god:
+    gr.HTML("<iframe src='https://ehristoforu-dalle-3-xl-lora-v2.hf.space' width='100%' height='1000px' style='border-radius: 8px;'></iframe>")
+
+with gr.Blocks() as instant:
+    gr.HTML("<iframe src='https://kingnish-instant-image.hf.space' width='100%' height='1000px' style='border-radius: 8px;'></iframe>")
+
 with gr.Blocks() as image:
-    gr.Markdown("""# Work In Progress
-    Features in Image engine
-    1. A fully dedicated Work for Image Generation Only
-    2. Sequential Image Generation
-    3. Image Gen with various inputs Text and Image
-    4. Gonna add different types of image generator according to use""")
+    gr.Markdown("""### More things are coming""")
+    gr.TabbedInterface([ god, instant], ['Flash🖼️','Instant🖼️'])    
 
 with gr.Blocks(theme=theme, title="OpenGPT 4o DEMO") as demo:
     gr.Markdown("# OpenGPT 4o")
-    gr.TabbedInterface([img, voice, video, image], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🖼 Image Engine'])
+    gr.TabbedInterface([chat, voice, video, image], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🖼️ Image Engine'])
 
 demo.queue(max_size=300)
 demo.launch()
