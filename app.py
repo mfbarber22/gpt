@@ -71,7 +71,7 @@ pipe = pipeline(
 )
 
 @spaces.GPU(queue=False)
-def transcribe(audio):
+def transcribe(inputs):
     if inputs is None:
         raise gr.Error("No audio file submitted! Please upload or record an audio file before submitting your request.")
 
