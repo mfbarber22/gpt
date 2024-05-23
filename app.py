@@ -516,7 +516,7 @@ with gr.Blocks() as voice:
             inputs=[input],
                 outputs=[output], live=True)
 
-with gr.Blocks() as video:  
+with gr.Blocks() as livechat:  
     gr.Interface(
         fn=videochat,
         inputs=[gr.Image(type="pil",sources="webcam", label="Upload Image"), gr.Textbox(label="Prompt", value="what he is doing")],
@@ -524,18 +524,28 @@ with gr.Blocks() as video:
     )
 
 with gr.Blocks() as god:
-    gr.HTML("<iframe src='https://ehristoforu-dalle-3-xl-lora-v2.hf.space' width='100%' height='1000px' style='border-radius: 8px;'></iframe>")
+    gr.HTML("<iframe src='https://kingnish-sdxl-flash.hf.space' width='100%' height='1200px' style='border-radius: 8px;'></iframe>")
 
 with gr.Blocks() as instant:
     gr.HTML("<iframe src='https://kingnish-instant-image.hf.space' width='100%' height='1000px' style='border-radius: 8px;'></iframe>")
 
 with gr.Blocks() as image:
-    gr.Markdown("""### More things are coming""")
-    gr.TabbedInterface([ god, instant], ['Flash🖼️','Instant🖼️'])    
+    gr.Markdown("""### More models are coming""")
+    gr.TabbedInterface([ god, instant], ['Powerful🖼️','Instant🖼️'])    
+
+
+
+
+with gr.Blocks() as instant2:
+    gr.HTML("<iframe src='https://kingnish-instant-video.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
+
+with gr.Blocks() as video:
+    gr.Markdown("""More Models are coming""")
+    gr.TabbedInterface([ instant2], ['Instant🎥'])   
 
 with gr.Blocks(theme=theme, title="OpenGPT 4o DEMO") as demo:
     gr.Markdown("# OpenGPT 4o")
-    gr.TabbedInterface([chat, voice, video, image], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🖼️ Image Engine'])
+    gr.TabbedInterface([chat, voice, livechat, image, video], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🖼️ Image Engine', '🎥 Video Engine'])
 
 demo.queue(max_size=300)
 demo.launch()
