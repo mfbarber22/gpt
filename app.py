@@ -149,34 +149,34 @@ examples_path = os.path.dirname(__file__)
 EXAMPLES = [
     [
         {
-            "text": "Hi, who are you",
+            "text": "Hi, who are you?",
         }
     ],
     [
         {
-            "text": "Create a Photorealistic image of Eiffel Tower",
+            "text": "Create a Photorealistic image of the Eiffel Tower.",
         }
     ],
     [
         {
-            "text": "Read what's written on the paper",
+            "text": "Read what's written on the paper.",
             "files": [f"{examples_path}/example_images/paper_with_text.png"],
         }
     ],
     [
         {
-            "text": "Identify 2 famous persons of modern world",
+            "text": "Identify two famous people in the modern world.",
             "files": [f"{examples_path}/example_images/elon_smoking.jpg", f"{examples_path}/example_images/steve_jobs.jpg",]
         }
     ],
     [
         {
-            "text": "Create 5 images of super cars, all cars must in different color",
+            "text": "Create five images of supercars, each in a different color.",
         }
     ],
     [
         {
-            "text": "What is 900*900",
+            "text": "What is 900 multiplied by 900?",
         }
     ],
     [
@@ -187,13 +187,13 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "Write an online ad for that product.",
+            "text": "Create an online ad for this product.",
             "files": [f"{examples_path}/example_images/shampoo.jpg"],
         }
     ],
     [
         {
-            "text": "What is formed by the deposition of either the weathered remains of other rocks?",
+            "text": "What is formed by the deposition of the weathered remains of other rocks?",
             "files": [f"{examples_path}/example_images/ai2d_example.jpeg"],
         }
     ],    
@@ -234,8 +234,7 @@ def format_user_prompt_with_im_history_and_system_conditioning(
     user_prompt, chat_history
 ) -> List[Dict[str, Union[List, str]]]:
     """
-    Produces the resulting list that needs to go inside the processor.
-    It handles the potential image(s), the history and the system conditionning.
+    Produce the resulting list that needs to go inside the processor. It handles the potential image(s), the history, and the system conditioning.
     """
     resulting_messages = copy.deepcopy(SYSTEM_PROMPT)
     resulting_images = []
@@ -316,10 +315,10 @@ def model_inference(
     top_p,
 ):
     if user_prompt["text"].strip() == "" and not user_prompt["files"]:
-        gr.Error("Please input a query and optionally image(s).")
+        gr.Error("Please input a query and optionally an image(s).")
 
     if user_prompt["text"].strip() == "" and user_prompt["files"]:
-        gr.Error("Please input a text query along the image(s).")
+        gr.Error("Please input a text query along with the image(s).")
 
     streamer = TextIteratorStreamer(
         PROCESSOR.tokenizer,
@@ -417,7 +416,7 @@ decoding_strategy = gr.Radio(
     value="Top P Sampling",
     label="Decoding strategy",
     interactive=True,
-    info="Higher values is equivalent to sampling more low-probability tokens.",
+    info="Higher values are equivalent to sampling more low-probability tokens.",
 )
 temperature = gr.Slider(
     minimum=0.0,
@@ -437,7 +436,7 @@ top_p = gr.Slider(
     visible=True,
     interactive=True,
     label="Top P",
-    info="Higher values is equivalent to sampling more low-probability tokens.",
+    info="Higher values are equivalent to sampling more low-probability tokens.",
 )
 
 
