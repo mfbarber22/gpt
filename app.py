@@ -24,7 +24,6 @@ import gradio as gr
 from transformers import TextIteratorStreamer
 from transformers import Idefics2ForConditionalGeneration
 import tempfile
-from streaming_stt_nemo import Model
 from huggingface_hub import InferenceClient
 import edge_tts
 import asyncio
@@ -59,15 +58,25 @@ theme = gr.themes.Base(
     font=[gr.themes.GoogleFont('Libre Franklin'), gr.themes.GoogleFont('Public Sans'), 'system-ui', 'sans-serif'],
 )
 
-default_lang = "en"
+MODEL_NAME = "openai/whisper-medium"
+BATCH_SIZE = 10
 
-engines = { default_lang: Model(default_lang) }
+device = 0 if torch.cuda.is_available() else "cpu"
 
+pipe = pipeline(
+    task="automatic-speech-recognition",
+    model=MODEL_NAME,
+    chunk_length_s=30,
+    device=device,
+)
+
+@spaces.GPU(queue=False)
 def transcribe(audio):
-    lang = "en"
-    model = engines[lang]
-    text = model.stt_file(audio)[0]
-    return text
+    if inputs is None:
+        raise gr.Error("No audio file submitted! Please upload or record an audio file before submitting your request.")
+
+    text = pipe(inputs, batch_size=BATCH_SIZE, generate_kwargs={"task": "transcribe"})["text"]
+    return  text
 
 client1 = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
 
@@ -489,6 +498,8 @@ with gr.Blocks(
     )
 
     gr.ChatInterface(
+        batch=True,
+        max_batch_size=10, 
         fn=model_inference,
         chatbot=chatbot,
         examples=EXAMPLES,
@@ -512,12 +523,16 @@ with gr.Blocks() as voice:
                         autoplay=True,
                         elem_classes="audio")
         gr.Interface(
+            batch=True,
+            max_batch_size=10, 
             fn=respond, 
             inputs=[input],
                 outputs=[output], live=True)
 
 with gr.Blocks() as livechat:  
     gr.Interface(
+        batch=True,
+        max_batch_size=10, 
         fn=videochat,
         inputs=[gr.Image(type="pil",sources="webcam", label="Upload Image"), gr.Textbox(label="Prompt", value="what he is doing")],
         outputs=gr.Textbox(label="Answer")
