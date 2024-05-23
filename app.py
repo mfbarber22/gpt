@@ -498,8 +498,6 @@ with gr.Blocks(
     )
 
     gr.ChatInterface(
-        batch=True,
-        max_batch_size=10, 
         fn=model_inference,
         chatbot=chatbot,
         examples=EXAMPLES,
