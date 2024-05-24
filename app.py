@@ -54,9 +54,20 @@ def videochat(image3, prompt3):
         decoded_text = decoded_text[:-10]
     yield decoded_text
 
-theme = gr.themes.Base(
-    font=[gr.themes.GoogleFont('Libre Franklin'), gr.themes.GoogleFont('Public Sans'), 'system-ui', 'sans-serif'],
-)
+theme = gr.themes.Soft(
+    primary_hue="blue",
+    secondary_hue="orange",
+    neutral_hue="gray",
+    font=[gr.themes.GoogleFont('Libre Franklin'), gr.themes.GoogleFont('Public Sans'), 'system-ui', 'sans-serif']).set(
+        body_background_fill_dark="#111111",
+        block_background_fill_dark="#111111",
+        block_border_width="1px",
+        block_title_background_fill_dark="#1e1c26",
+        input_background_fill_dark="#292733",
+        button_secondary_background_fill_dark="#24212b",
+        border_color_primary_dark="#343140",
+        background_fill_secondary_dark="#111111",
+        color_accent_soft_dark="transparent")
 
 MODEL_NAME = "openai/whisper-medium"
 BATCH_SIZE = 10
@@ -78,18 +89,39 @@ def transcribe(inputs):
     text = pipe(inputs, batch_size=BATCH_SIZE, generate_kwargs={"task": "transcribe"})["text"]
     return  text
 
-client1 = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
+HF_TOKEN = os.environ.get("HF_TOKEN", None)
+
+def client_fn(model):
+    if "Mixtral" in model:
+        return InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
+    elif "Llama" in model:
+        return InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct")
+    elif "Mistral" in model:
+        return InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
+    elif "Phi" in model:
+        return InferenceClient("microsoft/Phi-3-mini-4k-instruct")
+    else: 
+        return InferenceClient("microsoft/Phi-3-mini-4k-instruct")
+
+def randomize_seed_fn(seed: int) -> int:
+    seed = random.randint(0, 999999)
+    return seed
 
 system_instructions1 = "[SYSTEM] Answer as Real OpenGPT 4o, Made by 'KingNish', Keep conversation very short, clear, friendly and concise. The text provided is a request for a specific type of response from you, the virtual assistant. You will avoid introductions and start answering the query directly, elaborating on all aspects of the request. As an AI-powered assistant, your task is to generate responses that appear as if they are created by the user and not an AI-powered assistant. [USER]"
 
-def model(text):
+def models(text, model="Mixtral 8x7B", seed=42):
+
+    seed = int(randomize_seed_fn(seed))
+    generator = torch.Generator().manual_seed(seed)  
+    
+    client = client_fn(model)
     generate_kwargs = dict(
         temperature=0.7,
         max_new_tokens=512,
         top_p=0.95,
         repetition_penalty=1,
         do_sample=True,
-        seed=42,
+        seed=seed,
     )
     
     formatted_prompt = system_instructions1 + text + "[OpenGPT 4o]"
@@ -115,7 +147,7 @@ DEVICE = torch.device("cuda")
 MODELS = {
     "idefics2-8b-chatty": Idefics2ForConditionalGeneration.from_pretrained(
         "HuggingFaceM4/idefics2-8b-chatty",
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float16,
         _attn_implementation="flash_attention_2",
     ).to(DEVICE),
 }
@@ -521,16 +553,12 @@ with gr.Blocks() as voice:
                         autoplay=True,
                         elem_classes="audio")
         gr.Interface(
-            batch=True,
-            max_batch_size=10, 
             fn=respond, 
             inputs=[input],
-                outputs=[output], live=True)
+                outputs=[output], api_name="translate", live=True)
 
 with gr.Blocks() as livechat:  
     gr.Interface(
-        batch=True,
-        max_batch_size=10, 
         fn=videochat,
         inputs=[gr.Image(type="pil",sources="webcam", label="Upload Image"), gr.Textbox(label="Prompt", value="what he is doing")],
         outputs=gr.Textbox(label="Answer")
