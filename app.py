@@ -546,9 +546,25 @@ with gr.Blocks(
     )
 
 with gr.Blocks() as voice:   
-    with gr.Row():
-        input = gr.Audio(label="Voice Chat", sources="microphone", type="filepath", waveform_options=False)
-        output = gr.Audio(label="OpenGPT 4o", type="filepath",
+     with gr.Row():
+        select = gr.Dropdown([ 'Mixtral 8x7B',
+        'Llama 3 8B',
+        'Mistral 7B v0.3',
+        'Phi 3 mini',
+    ],
+    value="Mixtral 8x7B",
+    label="Model"
+    )
+        seed = gr.Slider(
+        label="Seed",
+        minimum=0,
+        maximum=999999,
+        step=1,
+        value=0,
+        visible=False
+        )
+        input = gr.Audio(label="User", sources="microphone", type="filepath", waveform_options=False)
+        output = gr.Audio(label="AI", type="filepath",
                         interactive=False,
                         autoplay=True,
                         elem_classes="audio")
