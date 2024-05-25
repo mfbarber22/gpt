@@ -20,7 +20,7 @@ import urllib
 import PIL.Image
 import io
 import datasets
-
+from streaming_stt_nemo import Model as nemo
 import gradio as gr
 from transformers import TextIteratorStreamer
 from transformers import Idefics2ForConditionalGeneration
@@ -70,39 +70,31 @@ theme = gr.themes.Soft(
         background_fill_secondary_dark="#111111",
         color_accent_soft_dark="transparent")
 
-MODEL_NAME = "openai/whisper-medium"
-BATCH_SIZE = 10
+default_lang = "en"
 
-device = 0 if torch.cuda.is_available() else "cpu"
+engines = { default_lang: nemo(default_lang) }
 
-pipe = pipeline(
-    task="automatic-speech-recognition",
-    model=MODEL_NAME,
-    chunk_length_s=30,
-    device=device,
-)
-
-@spaces.GPU(queue=False)
-def transcribe(inputs):
-    if inputs is None:
-        raise gr.Error("No audio file submitted! Please upload or record an audio file before submitting your request.")
-
-    text = pipe(inputs, batch_size=BATCH_SIZE, generate_kwargs={"task": "transcribe"})["text"]
-    return  text
+def transcribe(audio):
+    lang = "en"
+    model = engines[lang]
+    text = model.stt_file(audio)[0]
+    return text
 
 HF_TOKEN = os.environ.get("HF_TOKEN", None)
 
 def client_fn(model):
-    if "Mixtral" in model:
-        return InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
-    elif "Llama" in model:
-        return InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct")
+    if "Nous" in model:
+        return InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
+    elif "Star" in model:
+        return InferenceClient("HuggingFaceH4/starchat2-15b-v0.1")
     elif "Mistral" in model:
         return InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
     elif "Phi" in model:
         return InferenceClient("microsoft/Phi-3-mini-4k-instruct")
+    elif "Zephyr" in model:
+        return InferenceClient("HuggingFaceH4/zephyr-7b-beta")
     else: 
-        return InferenceClient("microsoft/Phi-3-mini-4k-instruct")
+        return InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
 
 def randomize_seed_fn(seed: int) -> int:
     seed = random.randint(0, 999999)
@@ -117,16 +109,12 @@ def models(text, model="Mixtral 8x7B", seed=42):
     
     client = client_fn(model)
     generate_kwargs = dict(
-        temperature=0.7,
         max_new_tokens=512,
-        top_p=0.95,
-        repetition_penalty=1,
-        do_sample=True,
         seed=seed,
     )
     
     formatted_prompt = system_instructions1 + text + "[OpenGPT 4o]"
-    stream = client1.text_generation(
+    stream = client.text_generation(
         formatted_prompt, **generate_kwargs, stream=True, details=True, return_full_text=False)
     output = ""
     for response in stream:
@@ -135,9 +123,9 @@ def models(text, model="Mixtral 8x7B", seed=42):
 
     return output
 
-async def respond(audio):
+async def respond(audio, model, seed):
     user = transcribe(audio)
-    reply = model(user)
+    reply = models(user, model, seed)
     communicate = edge_tts.Communicate(reply)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
         tmp_path = tmp_file.name
@@ -548,14 +536,7 @@ with gr.Blocks(
 
 with gr.Blocks() as voice:   
      with gr.Row():
-        select = gr.Dropdown([ 'Mixtral 8x7B',
-        'Llama 3 8B',
-        'Mistral 7B v0.3',
-        'Phi 3 mini',
-    ],
-    value="Mixtral 8x7B",
-    label="Model"
-    )
+        select = gr.Dropdown([ 'Nous Hermes Mixtral 8x7B DPO', 'Mixtral 8x7B','StarChat2 15b','Mistral 7B v0.3','Phi 3 mini', 'Zephyr 7b' ], value="Mistral 7B v0.3", label="Select Model")
         seed = gr.Slider(
         label="Seed",
         minimum=0,
@@ -571,7 +552,7 @@ with gr.Blocks() as voice:
                         elem_classes="audio")
         gr.Interface(
             fn=respond, 
-            inputs=[input],
+            inputs=[input, select,seed],
                 outputs=[output], api_name="translate", live=True)
 
 with gr.Blocks() as livechat:  
