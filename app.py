@@ -563,10 +563,10 @@ with gr.Blocks() as livechat:
     )
 
 with gr.Blocks() as instant:
-    gr.HTML("<iframe src='https://kingnish-sdxl-flash.hf.space' width='100%' height='100%' style='border-radius: 8px;'></iframe>")
+    gr.HTML("<iframe src='https://kingnish-sdxl-flash.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
 
 with gr.Blocks() as dalle:
-    gr.HTML("<iframe src='https://ehristoforu-dalle-3-xl-lora-v2.hf.space' width='100%' height='100%' style='border-radius: 8px;'></iframe>")
+    gr.HTML("<iframe src='https://ehristoforu-dalle-3-xl-lora-v2.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
 
 with gr.Blocks() as image:
     gr.Markdown("""### More models are coming""")
@@ -576,7 +576,7 @@ with gr.Blocks() as image:
 
 
 with gr.Blocks() as instant2:
-    gr.HTML("<iframe src='https://kingnish-instant-video.hf.space' width='100%' height='100%' style='border-radius: 8px;'></iframe>")
+    gr.HTML("<iframe src='https://kingnish-instant-video.hf.space' width='100%' height='3000px' style='border-radius: 8px;'></iframe>")
 
 with gr.Blocks() as video:
     gr.Markdown("""More Models are coming""")
