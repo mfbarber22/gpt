@@ -562,21 +562,21 @@ with gr.Blocks() as livechat:
         outputs=gr.Textbox(label="Answer")
     )
 
-with gr.Blocks() as god:
-    gr.HTML("<iframe src='https://kingnish-sdxl-flash.hf.space' width='100%' height='1200px' style='border-radius: 8px;'></iframe>")
-
 with gr.Blocks() as instant:
-    gr.HTML("<iframe src='https://kingnish-instant-image.hf.space' width='100%' height='1000px' style='border-radius: 8px;'></iframe>")
+    gr.HTML("<iframe src='https://kingnish-sdxl-flash.hf.space' width='100%' height='100%' style='border-radius: 8px;'></iframe>")
+
+with gr.Blocks() as dalle:
+    gr.HTML("<iframe src='https://ehristoforu-dalle-3-xl-lora-v2.hf.space' width='100%' height='100%' style='border-radius: 8px;'></iframe>")
 
 with gr.Blocks() as image:
     gr.Markdown("""### More models are coming""")
-    gr.TabbedInterface([ god, instant], ['Powerful🖼️','Instant🖼️'])    
+    gr.TabbedInterface([ instant, dalle], ['Instant🖼️','Powerful🖼️'])    
 
 
 
 
 with gr.Blocks() as instant2:
-    gr.HTML("<iframe src='https://kingnish-instant-video.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
+    gr.HTML("<iframe src='https://kingnish-instant-video.hf.space' width='100%' height='100%' style='border-radius: 8px;'></iframe>")
 
 with gr.Blocks() as video:
     gr.Markdown("""More Models are coming""")
