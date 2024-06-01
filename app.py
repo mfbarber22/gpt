@@ -568,9 +568,12 @@ with gr.Blocks() as instant:
 with gr.Blocks() as dalle:
     gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
 
+with gr.Blocks() as playground:
+    gr.HTML("<iframe src='https://fluently-fluently-playground.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
+
 with gr.Blocks() as image:
     gr.Markdown("""### More models are coming""")
-    gr.TabbedInterface([ instant, dalle], ['Instant🖼️','Powerful🖼️'])    
+    gr.TabbedInterface([ instant, dalle, playground], ['Instant🖼️','Powerful🖼️', 'Playground🖼'])    
 
 
 
