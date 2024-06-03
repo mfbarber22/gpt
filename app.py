@@ -366,55 +366,53 @@ def extract_text_from_webpage(html_content):
     return visible_text
 
 # Perform a Google search and return the results
-def search(term, num_results=3, lang="en", advanced=True, sleep_interval=0, timeout=5, safe="active", ssl_verify=None):
+def search(term, num_results=3, lang="en", advanced=True, timeout=5, safe="active", ssl_verify=None):
     """Performs a Google search and returns the results."""
-    # Ensure term is a string before parsing
-    if isinstance(term, dict):
-        term = term.get('text', '')  # Get text from user_prompt or default to empty string
-    escaped_term = urllib.parse.quote_plus(term)
+    escaped_term = urllib.parse.quote_plus(term) 
     start = 0
     all_results = []
-    # Fetch results in batches
-    while start < num_results:
-        resp = requests.get(
-            url="https://www.google.com/search",
-            headers={"User-Agent": get_useragent()},  # Set random user agent
-            params={
-                "q": term,
-                "num": num_results - start,  # Number of results to fetch in this batch
-                "hl": lang,
-                "start": start,
-                "safe": safe,
-            },
-            timeout=timeout,
-            verify=ssl_verify,
-        )
-        resp.raise_for_status()  # Raise an exception if request fails
-        soup = BeautifulSoup(resp.text, "html.parser")
-        result_block = soup.find_all("div", attrs={"class": "g"})
-        # If no results, continue to the next batch
-        if not result_block:
-            start += 1
-            continue
-        # Extract link and text from each result
-        for result in result_block:
-            link = result.find("a", href=True)
-            if link:
-                link = link["href"]
-                try:
-                    # Fetch webpage content
-                    webpage = requests.get(link, headers={"User-Agent": get_useragent()})
-                    webpage.raise_for_status()
-                    # Extract visible text from webpage
-                    visible_text = extract_text_from_webpage(webpage.text)
-                    all_results.append({"link": link, "text": visible_text})
-                except requests.exceptions.RequestException as e:
-                    # Handle errors fetching or processing webpage
-                    print(f"Error fetching or processing {link}: {e}")
-                    all_results.append({"link": link, "text": None})
-            else:
-                all_results.append({"link": None, "text": None})
-        start += len(result_block)  # Update starting index for next batch
+    # Limit the number of characters from each webpage to stay under the token limit
+    max_chars_per_page = 10000  # Adjust this value based on your token limit and average webpage length
+    
+    with requests.Session() as session: 
+        while start < num_results:
+            resp = session.get(  
+                url="https://www.google.com/search",
+                headers={"User-Agent": get_useragent()}, 
+                params={
+                    "q": term,
+                    "num": num_results - start,  
+                    "hl": lang,
+                    "start": start,
+                    "safe": safe,
+                },
+                timeout=timeout,
+                verify=ssl_verify,
+            )
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, "html.parser")
+            result_block = soup.find_all("div", attrs={"class": "g"})
+            if not result_block:
+                start += 1
+                continue
+            for result in result_block:
+                link = result.find("a", href=True)
+                if link:
+                    link = link["href"]
+                    try:
+                        webpage = session.get(link, headers={"User-Agent": get_useragent()}) 
+                        webpage.raise_for_status()
+                        visible_text = extract_text_from_webpage(webpage.text)
+                        # Truncate text if it's too long
+                        if len(visible_text) > max_chars_per_page:
+                            visible_text = visible_text[:max_chars_per_page] + "..."
+                        all_results.append({"link": link, "text": visible_text})
+                    except requests.exceptions.RequestException as e:
+                        print(f"Error fetching or processing {link}: {e}")
+                        all_results.append({"link": link, "text": None})
+                else:
+                    all_results.append({"link": None, "text": None})
+            start += len(result_block)  
     return all_results
 
 # Format the prompt for the language model
@@ -455,7 +453,7 @@ def model_inference(
             web_results = search(user_prompt["text"])
             web2 = ' '.join([f"Link: {res['link']}\nText: {res['text']}\n\n" for res in web_results])
             # Load the language model
-            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.2")
+            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
             generate_kwargs = dict(
                 max_new_tokens=4000,
                 do_sample=True,
