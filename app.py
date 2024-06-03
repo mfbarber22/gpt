@@ -455,7 +455,7 @@ def model_inference(
             web_results = search(user_prompt["text"])
             web2 = ' '.join([f"Link: {res['link']}\nText: {res['text']}\n\n" for res in web_results])
             # Load the language model
-            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
+            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.2")
             generate_kwargs = dict(
                 max_new_tokens=4000,
                 do_sample=True,
