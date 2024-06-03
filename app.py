@@ -272,8 +272,7 @@ def img_to_bytes(image_path):
 
 # Format user prompt with image history and system conditioning
 def format_user_prompt_with_im_history_and_system_conditioning(
-        user_prompt, chat_history
-) -> List[Dict[str, Union[List, str]]]:
+        user_prompt, chat_history) -> List[Dict[str, Union[List, str]]]:
     """
     Produce the resulting list that needs to go inside the processor. It handles the potential image(s), the history, and the system conditioning.
     """
@@ -287,7 +286,7 @@ def format_user_prompt_with_im_history_and_system_conditioning(
     # Format history
     for turn in chat_history:
         if not resulting_messages or (
-            resulting_messages and resulting_messages[-1]["role"] != "user"
+                resulting_messages and resulting_messages[-1]["role"] != "user"
         ):
             resulting_messages.append(
                 {
@@ -422,13 +421,14 @@ def search(term, num_results=3, lang="en", advanced=True, sleep_interval=0, time
 def format_prompt(user_prompt, chat_history):
     prompt = "<s>"
     for item in chat_history:
-        if isinstance(item, tuple):  # Check if it's a text turn
-            prompt += f"[INST] {item[0]} [/INST]"
-            prompt += f" {item[1]}</s> "
-        elif isinstance(item, str):  # Check if it's an image path
-            prompt += f"[INST] <image> [/INST] </s> "  # Placeholder for image turns
-        else: 
-            print(f"Unexpected type in chat_history: {type(item)}") # Debug output
+        # Check if the item is a tuple (text response)
+        if isinstance(item, tuple):
+            prompt += f"[INST] {item[0]} [/INST]"  # User prompt
+            prompt += f" {item[1]}</s> "           # Bot response
+        # Otherwise, assume it's related to an image - you might need to adjust this logic
+        else:
+            # Handle image representation in the prompt, e.g., add a placeholder
+            prompt += f" [Image] " 
     prompt += f"[INST] {user_prompt} [/INST]"
     return prompt
 
@@ -455,7 +455,7 @@ def model_inference(
             web_results = search(user_prompt["text"])
             web2 = ' '.join([f"Link: {res['link']}\nText: {res['text']}\n\n" for res in web_results])
             # Load the language model
-            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.2")
+            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
             generate_kwargs = dict(
                 max_new_tokens=4000,
                 do_sample=True,
