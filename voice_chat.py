@@ -9,6 +9,7 @@ import torch
 import sentencepiece as spm
 import onnxruntime as ort
 from huggingface_hub import hf_hub_download, InferenceClient
+import os
 
 # Speech Recognition Model Configuration
 model_name = "neongeckocom/stt_en_citrinet_512_gamma_0_25"
