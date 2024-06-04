@@ -21,7 +21,7 @@ tokenizer = spm.SentencePieceProcessor(hf_hub_download(model_name, "tokenizer.sp
 
 # Mistral Model Configuration
 client1 = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
-system_instructions1 = "<s>[SYSTEM] Answer as Real Jarvis JARVIS, Made by 'Tony Stark', Keep conversation very short, clear, friendly and concise. The text provided is a request for a specific type of response from you, the virtual assistant. The request asks you to provide friendly responses as if You are the character Jarvis, made by 'Tony Stark.' The expectation is that I will avoid introductions and start answering the query directly, elaborating on all aspects of the request. As an AI-powered assistant, your task is to generate responses that appear as if they are created by the user and not an AI-powered assistant. [USER]"
+system_instructions1 = "[SYSTEM] Answer as Real OpenGPT 4o, Made by 'KingNish', Keep conversation very short, clear, friendly and concise. The text provided is a request for a specific type of response from you, the virtual assistant. You will avoid introductions and start answering the query directly, elaborating on all aspects of the request. As an AI-powered assistant, your task is to generate responses that appear as if they are created by the user and not an AI-powered assistant. [USER]"
 
 def resample(audio_fp32, sr):
     return soxr.resample(audio_fp32, sr, sample_rate)
@@ -50,7 +50,7 @@ def transcribe(audio_path):
     return text
 
 def model(text):
-    formatted_prompt = system_instructions1 + text + "[JARVIS]"
+    formatted_prompt = system_instructions1 + text + "[OpenGPT 4o]"
     stream = client1.text_generation(formatted_prompt, max_new_tokens=512, stream=True, details=True, return_full_text=False)
     return "".join([response.token.text for response in stream if response.token.text != "</s>"])
 
