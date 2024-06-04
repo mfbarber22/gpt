@@ -78,15 +78,12 @@ with gr.Blocks() as voice:
     with gr.Row():
         select = gr.Dropdown(['Nous Hermes Mixtral 8x7B DPO', 'Mixtral 8x7B', 'StarChat2 15b', 'Mistral 7B v0.3',
                               'Phi 3 mini', 'Zephyr 7b'], value="Mistral 7B v0.3", label="Select Model")
-        input = gr.Audio(label="User", sources="microphone", type="filepath", waveform_options=False)
-        output = gr.Audio(label="AI", type="filepath",
-                          interactive=False,
-                          autoplay=True,
-                          elem_classes="audio")
+        input = gr.Audio(label="Voice Chat (BETA)", sources="microphone", type="filepath", waveform_options=False)
+        output = gr.Audio(label="JARVIS", type="filepath", interactive=False, autoplay=True, elem_classes="audio")
         gr.Interface(
             fn=respond,
             inputs=[input, select],
-            outputs=[output], api_name="translate", live=True)
+            outputs=[output], api_name="transcribe", live=True)
 
 # Live chat block
 with gr.Blocks() as livechat:
