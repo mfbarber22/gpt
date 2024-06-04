@@ -9,7 +9,6 @@ import torch
 import sentencepiece as spm
 import onnxruntime as ort
 from huggingface_hub import hf_hub_download, InferenceClient
-import os
 
 # Speech Recognition Model Configuration
 model_name = "neongeckocom/stt_en_citrinet_512_gamma_0_25"
@@ -20,28 +19,9 @@ preprocessor = torch.jit.load(hf_hub_download(model_name, "preprocessor.ts", sub
 encoder = ort.InferenceSession(hf_hub_download(model_name, "model.onnx", subfolder="onnx"))
 tokenizer = spm.SentencePieceProcessor(hf_hub_download(model_name, "tokenizer.spm", subfolder="onnx"))
 
-# Model Configuration
-
-# Get Hugging Face API token
-HF_TOKEN = os.environ.get("HF_TOKEN", None)
-
-
-# Define a function to get the appropriate InferenceClient based on model name
-def client_fn(model):
-    if "Nous" in model:
-        return InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
-    elif "Star" in model:
-        return InferenceClient("HuggingFaceH4/starchat2-15b-v0.1")
-    elif "Mistral" in model:
-        return InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
-    elif "Phi" in model:
-        return InferenceClient("microsoft/Phi-3-mini-4k-instruct")
-    elif "Zephyr" in model:
-        return InferenceClient("HuggingFaceH4/zephyr-7b-beta")
-    else:
-        return InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
-
-system_instructions1 = "[SYSTEM] Answer as Real OpenGPT 4o, Made by 'KingNish', Keep conversation very short, clear, friendly and concise. The text provided is a request for a specific type of response from you, the virtual assistant. You will avoid introductions and start answering the query directly, elaborating on all aspects of the request. As an AI-powered assistant, your task is to generate responses that appear as if they are created by the user and not an AI-powered assistant. [USER]"
+# Mistral Model Configuration
+client1 = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
+system_instructions1 = "<s>[SYSTEM] Answer as Real Jarvis JARVIS, Made by 'Tony Stark', Keep conversation very short, clear, friendly and concise. The text provided is a request for a specific type of response from you, the virtual assistant. The request asks you to provide friendly responses as if You are the character Jarvis, made by 'Tony Stark.' The expectation is that I will avoid introductions and start answering the query directly, elaborating on all aspects of the request. As an AI-powered assistant, your task is to generate responses that appear as if they are created by the user and not an AI-powered assistant. [USER]"
 
 def resample(audio_fp32, sr):
     return soxr.resample(audio_fp32, sr, sample_rate)
@@ -69,15 +49,14 @@ def transcribe(audio_path):
 
     return text
 
-def model(text, model="Mixtral 8x7B"):
-    client1 = client_fn(model)
-    formatted_prompt = system_instructions1 + text + "[OpenGPT 4o]"
+def model(text):
+    formatted_prompt = system_instructions1 + text + "[JARVIS]"
     stream = client1.text_generation(formatted_prompt, max_new_tokens=512, stream=True, details=True, return_full_text=False)
     return "".join([response.token.text for response in stream if response.token.text != "</s>"])
 
-async def respond(audio, model):
+async def respond(audio):
     user = transcribe(audio)
-    reply = model(user, model)
+    reply = model(user)
     communicate = edge_tts.Communicate(reply)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
         tmp_path = tmp_file.name
