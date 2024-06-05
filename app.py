@@ -78,7 +78,9 @@ with gr.Blocks() as voice:
     with gr.Row():
         input = gr.Audio(label="Voice Chat (BETA)", sources="microphone", type="filepath", waveform_options=False)
         output = gr.Audio(label="JARVIS", type="filepath", interactive=False, autoplay=True, elem_classes="audio")
-        gr.Interface(fn=respond, inputs=[input], outputs=[output], live=True)
+        gr.Interface(fn=respond, inputs=[input], outputs=[output])
+        input.stop_recording(fn=respond, inputs=[input], outputs=[output])
+        
 
 # Live chat block
 with gr.Blocks() as livechat:
