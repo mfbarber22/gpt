@@ -71,6 +71,7 @@ with gr.Blocks(
             top_p,
             gr.Checkbox(label="Web Search", value=True),
         ],
+        concurrency_limit=20
     )
 
 # Voice chat block
