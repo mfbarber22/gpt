@@ -508,7 +508,7 @@ top_p = gr.Slider(
 
 # Create a chatbot interface
 chatbot = gr.Chatbot(
-    label="OpnGPT-4o-Chatty",
+    label="OpenGPT-4o-Chatty",
     avatar_images=[None, BOT_AVATAR],
     show_copy_button=True,
     likeable=True,
@@ -521,8 +521,6 @@ model_selector = gr.Dropdown(
     choices=MODELS.keys(),
     value=list(MODELS.keys())[0],
     interactive=True,
-    show_label=False,
-    container=False,
     label="Model",
     visible=False,
 )
