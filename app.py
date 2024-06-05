@@ -31,7 +31,7 @@ with gr.Blocks(
         fill_height=True,
         css=""".gradio-container .avatar-container {height: 40px width: 40px !important;} #duplicate-button {margin: auto; color: white; background: #f1a139; border-radius: 100vh; margin-top: 2px; margin-bottom: 2px;}""",
 ) as chat:
-    gr.Markdown("# Image Chat, Image Generation, Image classification and Normal Chat")
+    gr.Markdown("### Image Chat, Image Generation and Normal Chat")
     with gr.Row(elem_id="model_selector_row"):
         # model_selector defined in chatbot.py
         pass  
