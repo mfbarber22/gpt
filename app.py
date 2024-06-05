@@ -227,11 +227,12 @@ with gr.Blocks(
     )
 
 # Voice chat block
-with gr.Blocks() as voice:
-    gr.Interface(fn=respond, 
-                inputs=[gr.Audio(label="User Input", sources="microphone", type="filepath"), gr.Checkbox(label="Web Search", value=False)], 
-                outputs=[gr.Audio(label="AI", autoplay=True)], 
-                live=True)        
+with gr.Blocks() as voice:    
+    with gr.Row():
+        web_search = gr.Checkbox(label="Web Search", value=False)
+        input = gr.Audio(label="User Input", sources="microphone", type="filepath")
+        output = gr.Audio(label="AI", autoplay=True)
+        gr.Interface(fn=respond, inputs=[input, web_search], outputs=[output], live=True)     
 
 # Live chat block
 with gr.Blocks() as livechat:
