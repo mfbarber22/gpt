@@ -2,7 +2,7 @@ import gradio as gr
 
 # Import modules from other files
 from chatbot import chatbot, model_inference, BOT_AVATAR, EXAMPLES, model_selector, decoding_strategy, temperature, max_new_tokens, repetition_penalty, top_p
-from voice_chat import respond, model, transcribe, search
+from voice_chat import respond
 from live_chat import videochat
 
 # Define Gradio theme
@@ -77,10 +77,9 @@ with gr.Blocks(
 with gr.Blocks() as voice:
     with gr.Row():
         web_search = gr.Checkbox(label="Web Search", value=False)
-        input = gr.Audio(label="Voice Chat", sources="microphone")
-        output = gr.Audio(label="AI",autoplay=True)
-        gr.Interface(fn=respond, inputs=[input, web_search], outputs=[output], live=True, batch=True, max_batch_size=20, delete_cache=(60,60))
-        
+        input = gr.Audio(label="User Input", sources="microphone", type="filepath")
+        output = gr.Audio(label="AI", autoplay=True)
+        gr.Interface(fn=respond, inputs=[input, web_search], outputs=[output], live=True)        
 
 # Live chat block
 with gr.Blocks() as livechat:
