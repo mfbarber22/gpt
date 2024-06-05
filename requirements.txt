@@ -12,3 +12,4 @@ onnxruntime
 sentencepiece
 soxr
 pydub
+edge-tts
