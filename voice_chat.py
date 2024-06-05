@@ -12,6 +12,22 @@ from huggingface_hub import hf_hub_download, InferenceClient
 import requests
 from bs4 import BeautifulSoup
 import urllib
+import random
+
+# List of user agents to choose from for requests
+_useragent_list = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.62',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0'
+]
+
+def get_useragent():
+    """Returns a random user agent from the list."""
+    return random.choice(_useragent_list)
 
 def extract_text_from_webpage(html_content):
     """Extracts visible text from HTML content using BeautifulSoup."""
@@ -33,7 +49,7 @@ def search(term, num_results=1, lang="en", advanced=True, sleep_interval=0, time
     while start < num_results:
         resp = requests.get(
             url="https://www.google.com/search",
-            headers={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.62"}, # Set random user agent
+            headers={"User-Agent": get_useragent()}, # Set random user agent
             params={
                 "q": term,
                 "num": num_results - start, # Number of results to fetch in this batch
@@ -137,13 +153,3 @@ async def respond(audio, web_search):
         tmp_path = tmp_file.name
         await communicate.save(tmp_path)
     return tmp_path
-
-with gr.Blocks() as demo:    
-    with gr.Row():
-        web_search = gr.Checkbox(label="Web Search", value=False)
-        input = gr.Audio(label="Voice Chat (BETA)", sources="microphone", type="filepath", waveform_options=False)
-        output = gr.Audio(label="JARVIS", type="filepath", interactive=False, autoplay=True, elem_classes="audio")
-        gr.Interface(fn=respond, inputs=[input, web_search], outputs=[output], live=True)
-
-if __name__ == "__main__":
-    demo.queue(max_size=200).launch()
