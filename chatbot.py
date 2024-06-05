@@ -260,7 +260,7 @@ def search(term, num_results=3, lang="en", advanced=True, timeout=5, safe="activ
     start = 0
     all_results = []
     # Limit the number of characters from each webpage to stay under the token limit
-    max_chars_per_page = 10000  # Adjust this value based on your token limit and average webpage length
+    max_chars_per_page = 8000  # Adjust this value based on your token limit and average webpage length
 
     with requests.Session() as session:
         while start < num_results:
