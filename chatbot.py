@@ -23,6 +23,7 @@ from transformers import AutoProcessor
 from huggingface_hub import InferenceClient
 from PIL import Image
 import spaces
+from functools import lru_cache
 
 # Set device to CUDA if available, otherwise CPU
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -222,26 +223,8 @@ def extract_images_from_msg_list(msg_list):
                 all_images.append(c_)
     return all_images
 
-
-# List of user agents for web search
-_useragent_list = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.62',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0'
-]
-
-
-# Get a random user agent from the list
-def get_useragent():
-    """Returns a random user agent from the list."""
-    return random.choice(_useragent_list)
-
-
-# Extract visible text from HTML content using BeautifulSoup
+# Perform a Google search and return the results
+@lru_cache(maxsize=128) 
 def extract_text_from_webpage(html_content):
     """Extracts visible text from HTML content using BeautifulSoup."""
     soup = BeautifulSoup(html_content, "html.parser")
@@ -252,24 +235,23 @@ def extract_text_from_webpage(html_content):
     visible_text = soup.get_text(strip=True)
     return visible_text
 
-
 # Perform a Google search and return the results
-def search(term, num_results=3, lang="en", advanced=True, timeout=5, safe="active", ssl_verify=None):
+def search(term, num_results=2, lang="en", advanced=True, timeout=5, safe="active", ssl_verify=None):
     """Performs a Google search and returns the results."""
-    escaped_term = urllib.parse.quote_plus(term)
+    escaped_term = urllib.parse.quote_plus(term) 
     start = 0
     all_results = []
     # Limit the number of characters from each webpage to stay under the token limit
     max_chars_per_page = 8000  # Adjust this value based on your token limit and average webpage length
-
-    with requests.Session() as session:
+    
+    with requests.Session() as session: 
         while start < num_results:
-            resp = session.get(
+            resp = session.get(  
                 url="https://www.google.com/search",
-                headers={"User-Agent": get_useragent()},
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}, 
                 params={
                     "q": term,
-                    "num": num_results - start,
+                    "num": num_results - start,  
                     "hl": lang,
                     "start": start,
                     "safe": safe,
@@ -288,7 +270,7 @@ def search(term, num_results=3, lang="en", advanced=True, timeout=5, safe="activ
                 if link:
                     link = link["href"]
                     try:
-                        webpage = session.get(link, headers={"User-Agent": get_useragent()})
+                        webpage = session.get(link, headers={"User-Agent": get_useragent()}) 
                         webpage.raise_for_status()
                         visible_text = extract_text_from_webpage(webpage.text)
                         # Truncate text if it's too long
@@ -300,9 +282,8 @@ def search(term, num_results=3, lang="en", advanced=True, timeout=5, safe="activ
                         all_results.append({"link": link, "text": None})
                 else:
                     all_results.append({"link": None, "text": None})
-            start += len(result_block)
+            start += len(result_block)  
     return all_results
-
 
 # Format the prompt for the language model
 def format_prompt(user_prompt, chat_history):
