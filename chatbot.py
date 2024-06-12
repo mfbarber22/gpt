@@ -270,7 +270,7 @@ def search(term, num_results=2, lang="en", advanced=True, timeout=5, safe="activ
                 if link:
                     link = link["href"]
                     try:
-                        webpage = session.get(link, headers={"User-Agent": get_useragent()}) 
+                        webpage = session.get(link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}) 
                         webpage.raise_for_status()
                         visible_text = extract_text_from_webpage(webpage.text)
                         # Truncate text if it's too long
