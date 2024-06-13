@@ -3,8 +3,8 @@ title: OpenGPT 4o
 emoji: 🔥
 colorFrom: blue
 colorTo: indigo
-sdk: gradio
-sdk_version: 4.33.0
+sdk: docker
+sdk_version: 4.36.1
 app_file: app.py
 pinned: true
 short_description: GPT 4o like bot.
