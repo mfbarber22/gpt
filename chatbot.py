@@ -236,54 +236,30 @@ def extract_text_from_webpage(html_content):
     visible_text = soup.get_text(strip=True)
     return visible_text
 
+from duckduckgo_search import DDGS
+
 # Perform a Google search and return the results
-def search(term, num_results=2, lang="en", advanced=True, timeout=5, safe="active", ssl_verify=None):
-    """Performs a Google search and returns the results."""
-    escaped_term = urllib.parse.quote_plus(term) 
-    start = 0
+def search(term):
     all_results = []
     # Limit the number of characters from each webpage to stay under the token limit
-    max_chars_per_page = 8000  # Adjust this value based on your token limit and average webpage length
-    
-    with requests.Session() as session: 
-        while start < num_results:
-            resp = session.get(  
-                url="https://www.google.com/search",
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}, 
-                params={
-                    "q": term,
-                    "num": num_results - start,  
-                    "hl": lang,
-                    "start": start,
-                    "safe": safe,
-                },
-                timeout=timeout,
-                verify=ssl_verify,
-            )
-            resp.raise_for_status()
-            soup = BeautifulSoup(resp.text, "html.parser")
-            result_block = soup.find_all("div", attrs={"class": "g"})
-            if not result_block:
-                start += 1
-                continue
-            for result in result_block:
-                link = result.find("a", href=True)
-                if link:
-                    link = link["href"]
-                    try:
-                        webpage = session.get(link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}) 
-                        webpage.raise_for_status()
-                        visible_text = extract_text_from_webpage(webpage.text)
+    max_chars_per_page = 8000  # Adjust this value based on your token limit and average webpage length    
+    result_block = DDGS().text(term, max_results=2)
+    for result in result_block:
+        if 'href' in result:
+            link = result["href"]
+            try:
+                webpage = requests.get(link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}) 
+                webpage.raise_for_status()
+                visible_text = extract_text_from_webpage(webpage.text)
                         # Truncate text if it's too long
-                        if len(visible_text) > max_chars_per_page:
-                            visible_text = visible_text[:max_chars_per_page] + "..."
-                        all_results.append({"link": link, "text": visible_text})
-                    except requests.exceptions.RequestException as e:
-                        print(f"Error fetching or processing {link}: {e}")
-                        all_results.append({"link": link, "text": None})
-                else:
-                    all_results.append({"link": None, "text": None})
-            start += len(result_block)  
+                if len(visible_text) > max_chars_per_page:
+                    visible_text = visible_text[:max_chars_per_page] + "..."
+                all_results.append({"link": link, "text": visible_text})
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching or processing {link}: {e}")
+                all_results.append({"link": link, "text": None})
+        else:
+            all_results.append({"link": None, "text": None})
     return all_results
 
 # Format the prompt for the language model
