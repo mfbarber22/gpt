@@ -231,7 +231,7 @@ with gr.Blocks(
             max_new_tokens,
             repetition_penalty,
             top_p,
-            gr.Checkbox(label="Web Search", value=True),
+            gr.Checkbox(label="Web Search", value=False),
         ],
     )    
 
