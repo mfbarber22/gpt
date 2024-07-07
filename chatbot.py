@@ -224,42 +224,80 @@ def extract_images_from_msg_list(msg_list):
                 all_images.append(c_)
     return all_images
 
-# Perform a Google search and return the results
-@lru_cache(maxsize=128) 
+from duckduckgo_search import DDGS
+from threading import Thread
+from queue import Queue
+import random
+
+def get_useragent():
+    return random.choice(_useragent_list)
+
+_useragent_list = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.62',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/605.1.15',
+    'Mozilla/5.0 (iPad; CPU OS 16_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/605.1.15',
+    'Mozilla/5.0 (Android 13; Mobile; rv:109.0) Gecko/109.0 Firefox/109.0',
+    'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; U; Android 11; en-us; SM-G991U) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4387.119 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 12; SM-G998U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 12; LM-G900V) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 11; SM-G975U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 11; SM-N975U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 13; SM-S918U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 13; SM-F936U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36'
+]
+
+@lru_cache(maxsize=512) 
 def extract_text_from_webpage(html_content):
     """Extracts visible text from HTML content using BeautifulSoup."""
     soup = BeautifulSoup(html_content, "html.parser")
-    # Remove unwanted tags
-    for tag in soup(["script", "style", "header", "footer", "nav"]):
+    for tag in soup(["script", "style", "header", "footer", "nav", "aside", 
+                     "figure", "figcaption", "template", "form", "input",
+                     "svg", "canvas", "video", "audio", "head", "meta", 
+                     "link", "img", "iframe", "noscript"]):
         tag.extract()
-    # Get the remaining visible text
-    visible_text = soup.get_text(strip=True)
-    return visible_text
+    return soup.get_text(strip=True)
 
-from duckduckgo_search import DDGS
+def fetch_and_extract(link, max_chars_per_page, queue):
+    """Fetches webpage content and extracts text in a separate thread."""
+    try:
+        webpage = requests.get(link, headers={"User-Agent": get_useragent()})
+        webpage.raise_for_status()
+        visible_text = extract_text_from_webpage(webpage.text)
+        if len(visible_text) > max_chars_per_page:
+            visible_text = visible_text[:max_chars_per_page] + "..."
+        queue.put({"link": link, "text": visible_text})
+    except requests.exceptions.RequestException as e:
+        queue.put({"link": link, "text": None})
+        print(f"Error fetching or processing {link}: {e}")
 
-# Perform a Google search and return the results
-def search(term):
+def search(term, max_results=2, max_chars_per_page=8000, max_threads=5):
+    """Performs a DuckDuckGo search and extracts text from webpages using threads."""
     all_results = []
-    # Limit the number of characters from each webpage to stay under the token limit
-    max_chars_per_page = 8000  # Adjust this value based on your token limit and average webpage length    
-    result_block = DDGS().text(term, max_results=2)
+    result_block = DDGS().text(term, max_results=max_results)
+    # Use a queue to store results from threads
+    queue = Queue()    
+    # Create and start threads for each link
+    threads = []
     for result in result_block:
         if 'href' in result:
             link = result["href"]
-            try:
-                webpage = requests.get(link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}) 
-                webpage.raise_for_status()
-                visible_text = extract_text_from_webpage(webpage.text)
-                        # Truncate text if it's too long
-                if len(visible_text) > max_chars_per_page:
-                    visible_text = visible_text[:max_chars_per_page] + "..."
-                all_results.append({"link": link, "text": visible_text})
-            except requests.exceptions.RequestException as e:
-                print(f"Error fetching or processing {link}: {e}")
-                all_results.append({"link": link, "text": None})
-        else:
-            all_results.append({"link": None, "text": None})
+            thread = Thread(target=fetch_and_extract, args=(link, max_chars_per_page, queue))
+            threads.append(thread)
+            thread.start()
+    # Wait for all threads to finish
+    for thread in threads:
+        thread.join()
+    # Retrieve results from the queue
+    while not queue.empty():
+        all_results.append(queue.get())
     return all_results
 
 # Format the prompt for the language model
