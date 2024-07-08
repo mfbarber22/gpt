@@ -265,6 +265,7 @@ def fetch_and_extract(link, max_chars_per_page):
         return {"link": link, "text": None}
 
 def search(term, max_results=2, max_chars_per_page=8000, max_threads=10):
+    gr.Info("Searching...")
     """Performs a DuckDuckGo search and extracts text from webpages."""
     all_results = []
     result_block = DDGS().text(term, max_results=max_results)
@@ -277,6 +278,7 @@ def search(term, max_results=2, max_chars_per_page=8000, max_threads=10):
             thread.start()
     for thread in threads:
         thread.join()
+    gr.Info("Extracting Important Info..")
     return all_results
 
 # Format the prompt for the language model
@@ -305,7 +307,7 @@ def update_history(answer="", question=""):
     return history
 
 # Define a function for model inference
-@spaces.GPU(duration=30, queue=False)
+@spaces.GPU(duration=45, queue=False)
 def model_inference(
         user_prompt,
         chat_history,
