@@ -261,7 +261,6 @@ def fetch_and_extract(link, max_chars_per_page):
             visible_text = visible_text[:max_chars_per_page] + "..."
         return {"link": link, "text": visible_text}
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching or processing {link}: {e}")
         return {"link": link, "text": None}
 
 def search(term, max_results=2, max_chars_per_page=8000, max_threads=10):
@@ -367,7 +366,6 @@ def model_inference(
                     output += response.token.text
                 yield output
         update_history(output, user_prompt)
-        print(history)
         return
     else:
         if user_prompt["text"].strip() == "" and not user_prompt["files"]:
