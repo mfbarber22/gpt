@@ -295,8 +295,7 @@ def search(term, num_results=3, lang="en", timeout=5, safe="active", ssl_verify=
                 continue
             for result in result_block:
                 link = result.find("a", href=True)
-                if link:
-                    link = link["href"]
+                link = link["href"]
                 thread = Thread(target=lambda: all_results.append(fetch_and_extract(link, max_chars_per_page)))
                 threads.append(thread)
                 thread.start()
