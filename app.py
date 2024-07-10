@@ -1,7 +1,7 @@
 import gradio as gr
 
 # Import modules from other files
-from chatbot import chatbot, model_inference, BOT_AVATAR, EXAMPLES, model_selector, decoding_strategy, temperature, max_new_tokens, repetition_penalty, min_p
+from chatbot import chatbot, model_inference, BOT_AVATAR, EXAMPLES, model_selector, decoding_strategy, temperature, max_new_tokens, repetition_penalty, top_p
 from live_chat import videochat
 
 # Define Gradio theme
@@ -197,7 +197,7 @@ with gr.Blocks(
     with gr.Row(elem_id="model_selector_row"):
         # model_selector defined in chatbot.py
         pass  
-    # decoding_strategy, temperature, min_p defined in chatbot.py
+    # decoding_strategy, temperature, top_p defined in chatbot.py
     decoding_strategy.change(
         fn=lambda selection: gr.Slider(
             visible=(
@@ -205,7 +205,7 @@ with gr.Blocks(
                     in [
                         "contrastive_sampling",
                         "beam_sampling",
-                        "Min P Sampling",
+                        "Top P Sampling",
                         "sampling_top_k",
                     ]
             )
@@ -214,9 +214,9 @@ with gr.Blocks(
         outputs=temperature,
     )
     decoding_strategy.change(
-        fn=lambda selection: gr.Slider(visible=(selection in ["Min P Sampling"])),
+        fn=lambda selection: gr.Slider(visible=(selection in ["Top P Sampling"])),
         inputs=decoding_strategy,
-        outputs=min_p,
+        outputs=top_p,
     )
     gr.ChatInterface(
         fn=model_inference,
@@ -230,7 +230,7 @@ with gr.Blocks(
             temperature,
             max_new_tokens,
             repetition_penalty,
-            min_p,
+            top_p,
             gr.Checkbox(label="Web Search", value=False),
         ],
     )    
