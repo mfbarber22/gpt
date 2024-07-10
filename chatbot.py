@@ -315,7 +315,7 @@ def model_inference(
         temperature,
         max_new_tokens,
         repetition_penalty,
-        min_p,
+        top_p,
         web_search,
 ):
     # Define generation_args at the beginning of the function
@@ -332,7 +332,6 @@ def model_inference(
             generate_kwargs = dict(
                 max_new_tokens=4000,
                 do_sample=True,
-                min_p=0.08,
             )
             # Format the prompt for the language model
             formatted_prompt = format_prompt(
@@ -352,7 +351,6 @@ def model_inference(
             generate_kwargs = dict(
                 max_new_tokens=5000,
                 do_sample=True,
-                min_p=0.08,
             )
             # Format the prompt for the language model
             formatted_prompt = format_prompt(
@@ -391,15 +389,16 @@ def model_inference(
         }
         assert decoding_strategy in [
             "Greedy",
-            "Min P Sampling",
+            "Top P Sampling",
         ]
 
         if decoding_strategy == "Greedy":
             generation_args["do_sample"] = False
-        elif decoding_strategy == "Min P Sampling":
+        elif decoding_strategy == "Top P Sampling":
             generation_args["temperature"] = temperature
             generation_args["do_sample"] = True
-            generation_args["min_p"] = min_p
+            generation_args["top_p"] = top_p
+        # Creating model inputs
         (
             resulting_text,
             resulting_images,
@@ -441,7 +440,7 @@ FEATURES = datasets.Features(
         "temperature": datasets.Value("float32"),
         "max_new_tokens": datasets.Value("int32"),
         "repetition_penalty": datasets.Value("float32"),
-        "min_p": datasets.Value("int32"),
+        "top_p": datasets.Value("int32"),
     }
 )
 
@@ -466,9 +465,9 @@ repetition_penalty = gr.Slider(
 decoding_strategy = gr.Radio(
     [
         "Greedy",
-        "Min P Sampling",
+        "Top P Sampling",
     ],
-    value="Min P Sampling",
+    value="Top P Sampling",
     label="Decoding strategy",
     interactive=True,
     info="Higher values are equivalent to sampling more low-probability tokens.",
@@ -483,14 +482,14 @@ temperature = gr.Slider(
     label="Sampling temperature",
     info="Higher values will produce more diverse outputs.",
 )
-min_p = gr.Slider(
+top_p = gr.Slider(
     minimum=0.01,
-    maximum=0.49,
-    value=0.08,
+    maximum=0.99,
+    value=0.9,
     step=0.01,
     visible=True,
     interactive=True,
-    label="Min P",
+    label="Top P",
     info="Higher values are equivalent to sampling more low-probability tokens.",
 )
 
