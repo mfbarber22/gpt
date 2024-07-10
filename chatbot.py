@@ -224,47 +224,20 @@ def extract_images_from_msg_list(msg_list):
                 all_images.append(c_)
     return all_images
 
-from duckduckgo_search import DDGS
-from threading import Thread
-import random
-from bs4 import BeautifulSoup
-from functools import lru_cache
-import requests
-
-_useragent_list = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.62',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0'
-]
-
-def get_useragent():
-    return random.choice(_useragent_list)
-
+# Perform a Google search and return the results
 @lru_cache(maxsize=128) 
 def extract_text_from_webpage(html_content):
+    """Extracts visible text from HTML content using BeautifulSoup."""
     soup = BeautifulSoup(html_content, "html.parser")
+    # Remove unwanted tags
     for tag in soup(["script", "style", "header", "footer", "nav"]):
         tag.extract()
-    return soup.get_text(strip=True)
-
-def fetch_and_extract(link, max_chars_per_page):
-    """Fetches webpage content and extracts text."""
-    try:
-        webpage = requests.get(link, headers={"User-Agent": get_useragent()})
-        webpage.raise_for_status()
-        visible_text = extract_text_from_webpage(webpage.text)
-        if len(visible_text) > max_chars_per_page:
-            visible_text = visible_text[:max_chars_per_page] + "..."
-        return {"link": link, "text": visible_text}
-    except requests.exceptions.RequestException as e:
-        return {"link": link, "text": None}
+    # Get the remaining visible text
+    visible_text = soup.get_text(strip=True)
+    return visible_text
 
 # Perform a Google search and return the results
-def search(term, num_results=3, lang="en", timeout=5, safe="active", ssl_verify=None):
+def search(term, num_results=2, lang="en", advanced=True, timeout=5, safe="active", ssl_verify=None):
     """Performs a Google search and returns the results."""
     escaped_term = urllib.parse.quote_plus(term) 
     start = 0
@@ -295,13 +268,22 @@ def search(term, num_results=3, lang="en", timeout=5, safe="active", ssl_verify=
                 continue
             for result in result_block:
                 link = result.find("a", href=True)
-                link = link["href"]
-                thread = Thread(target=lambda: all_results.append(fetch_and_extract(link, max_chars_per_page)))
-                threads.append(thread)
-                thread.start()
-    for thread in threads:
-        thread.join()
-    gr.Info("Extracting Important Info..")
+                if link:
+                    link = link["href"]
+                    try:
+                        webpage = session.get(link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}) 
+                        webpage.raise_for_status()
+                        visible_text = extract_text_from_webpage(webpage.text)
+                        # Truncate text if it's too long
+                        if len(visible_text) > max_chars_per_page:
+                            visible_text = visible_text[:max_chars_per_page] + "..."
+                        all_results.append({"link": link, "text": visible_text})
+                    except requests.exceptions.RequestException as e:
+                        print(f"Error fetching or processing {link}: {e}")
+                        all_results.append({"link": link, "text": None})
+                else:
+                    all_results.append({"link": None, "text": None})
+            start += len(result_block)  
     return all_results
 
 # Format the prompt for the language model
@@ -330,7 +312,7 @@ def update_history(answer="", question=""):
     return history
 
 # Define a function for model inference
-@spaces.GPU(duration=45, queue=False)
+@spaces.GPU(duration=30, queue=False)
 def model_inference(
         user_prompt,
         chat_history,
@@ -390,6 +372,7 @@ def model_inference(
                     output += response.token.text
                 yield output
         update_history(output, user_prompt)
+        print(history)
         return
     else:
         if user_prompt["text"].strip() == "" and not user_prompt["files"]:
