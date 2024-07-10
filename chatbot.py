@@ -263,18 +263,43 @@ def fetch_and_extract(link, max_chars_per_page):
     except requests.exceptions.RequestException as e:
         return {"link": link, "text": None}
 
-def search(term, max_results=2, max_chars_per_page=8000, max_threads=10):
-    gr.Info("Searching...")
-    """Performs a DuckDuckGo search and extracts text from webpages."""
+# Perform a Google search and return the results
+def search(term, num_results=3, lang="en", timeout=5, safe="active", ssl_verify=None):
+    """Performs a Google search and returns the results."""
+    escaped_term = urllib.parse.quote_plus(term) 
+    start = 0
     all_results = []
-    result_block = DDGS().text(term, max_results=max_results)
-    threads = []
-    for result in result_block:
-        if 'href' in result:
-            link = result["href"]
-            thread = Thread(target=lambda: all_results.append(fetch_and_extract(link, max_chars_per_page)))
-            threads.append(thread)
-            thread.start()
+    # Limit the number of characters from each webpage to stay under the token limit
+    max_chars_per_page = 8000  # Adjust this value based on your token limit and average webpage length
+    
+    with requests.Session() as session: 
+        while start < num_results:
+            resp = session.get(  
+                url="https://www.google.com/search",
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}, 
+                params={
+                    "q": term,
+                    "num": num_results - start,  
+                    "hl": lang,
+                    "start": start,
+                    "safe": safe,
+                },
+                timeout=timeout,
+                verify=ssl_verify,
+            )
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, "html.parser")
+            result_block = soup.find_all("div", attrs={"class": "g"})
+            if not result_block:
+                start += 1
+                continue
+            for result in result_block:
+                link = result.find("a", href=True)
+                if link:
+                    link = link["href"]
+                thread = Thread(target=lambda: all_results.append(fetch_and_extract(link, max_chars_per_page)))
+                threads.append(thread)
+                thread.start()
     for thread in threads:
         thread.join()
     gr.Info("Extracting Important Info..")
