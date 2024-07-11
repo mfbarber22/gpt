@@ -325,7 +325,7 @@ def model_inference(
                     output += response.token.text
                 yield output
         else:
-            client = InferenceClient("mistralai/Mixtral-8x7B-Instruct-v0.1")
+            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
             generate_kwargs = dict(
                 max_new_tokens=5000,
                 do_sample=True,
