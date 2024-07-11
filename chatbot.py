@@ -317,7 +317,7 @@ def model_inference(
                 do_sample=True,
             )
             # Format the prompt for the language model
-            formatted_prompt = f"""<s>[SYSTEM] You are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You are provided with WEB info from which you can find informations to answer. You do not say Unnecesarry things Only say thing which is important and relevant. Always learn from previous responses and conversations. [USER] {user_prompt} [WEB] {web2} [OpenGPT 4o]"""
+            formatted_prompt = f"""<s>[SYSTEM] You are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You are provided with WEB info from which you can find informations to answer. You do not say Unnecesarry things Only say thing which is important and relevant. Always learn from previous responses and conversations. [HISTORY] {history} [USER] {user_prompt} [WEB] {web2} [OpenGPT 4o]"""
             stream = client.text_generation(formatted_prompt, **generate_kwargs, stream=True, details=True, return_full_text=False)
             output = ""
             for response in stream:
