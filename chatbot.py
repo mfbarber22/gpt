@@ -253,9 +253,8 @@ def search(term, num_results=2, lang="en", advanced=True, timeout=5, safe="activ
                 params={
                     "q": term,
                     "num": num_results - start,  
-                    "hl": lang,
                     "start": start,
-                    "safe": safe,
+                    "udm": 14,
                 },
                 timeout=timeout,
                 verify=ssl_verify,
