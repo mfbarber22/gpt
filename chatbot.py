@@ -338,8 +338,8 @@ def model_inference(
                 if not response.token.text == "</s>":
                     output += response.token.text
                 yield output
-        print(formatted_prompt)
         update_history(output, user_prompt)
+        print(history)
         return
     else:
         if user_prompt["text"].strip() == "" and not user_prompt["files"]:
