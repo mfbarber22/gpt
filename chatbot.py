@@ -7,7 +7,6 @@ import random
 from threading import Thread
 from typing import List, Dict, Union
 import subprocess
-# Install flash attention, skipping CUDA build if necessary
 subprocess.run(
     "pip install flash-attn --no-build-isolation",
     env={"FLASH_ATTENTION_SKIP_CUDA_BUILD": "TRUE"},
@@ -279,21 +278,6 @@ def search(term, num_results=3, lang="en", advanced=True, timeout=5, safe="activ
                 all_results.append({"link": None, "text": None}) 
     return all_results
 
-# Format the prompt for the language model
-def format_prompt(user_prompt, chat_history):
-    prompt = "<s>"
-    for item in chat_history:
-        # Check if the item is a tuple (text response)
-        if isinstance(item, tuple):
-            prompt += f"[INST] {item[0]} [/INST]"  # User prompt
-            prompt += f" {item[1]}</s> "           # Bot response
-        # Otherwise, assume it's related to an image - you might need to adjust this logic
-        else:
-            # Handle image representation in the prompt, e.g., add a placeholder
-            prompt += f" [Image] " 
-    prompt += f"[INST] {user_prompt} [/INST]"
-    return prompt
-
 chat_history = []
 history = ""
 
@@ -327,20 +311,15 @@ def model_inference(
             web_results = search(user_prompt["text"])
             web2 = ' '.join([f"Link: {res['link']}\nText: {res['text']}\n\n" for res in web_results])
             # Load the language model
-            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
+            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.2")
             generate_kwargs = dict(
                 max_new_tokens=4000,
                 do_sample=True,
             )
             # Format the prompt for the language model
-            formatted_prompt = format_prompt(
-                f"""You are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You are provided with WEB info from which you can find informations to answer. You do not say Unnecesarry things Only say thing which is important and relevant. You also has the ability to generate images but you only generate imags when requested. BY Utilizing the following link structure, : ![](https://image.pollinations.ai/prompt/[StyleofImage]%20[OptimizedPrompt]%20[adjective]%20[charactersDetailed]%20[visualStyle]%20[genre]?width=[width]&height=[height]&nologo=poll&nofeed=yes&seed=[random])    For image generation, You replace info inside bracets with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience.     Note: 1. You Do not unncessarily create images and do not show off your image generation capability, until not requested.    2. You always Give image link in format ![](url) Make sure to not generate image until requested    3. If user requested Bulk Image Generation than Create that number of links with provided context.    4. Always learn from previous conversation.    5. Always try to connect conversation with history.    6. Do not make conversation too long.    7. Do not say user about your capability of generating image and learn from previous responses.    My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations.You remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question. Make sure to not generate image until requested [USER] {user_prompt} [WEB] {web2} [OpenGPT 4o]""",
-                chat_history)
-            # Generate the response from the language model
-            stream = client.text_generation(formatted_prompt, **generate_kwargs, stream=True, details=True,
-                                            return_full_text=False)
+            formatted_prompt = f"""<s>[SYSTEM] You are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You are provided with WEB info from which you can find informations to answer. You do not say Unnecesarry things Only say thing which is important and relevant. Always learn from previous responses and conversations. [USER] {user_prompt} [WEB] {web2} [OpenGPT 4o]"""
+            stream = client.text_generation(formatted_prompt, **generate_kwargs, stream=True, details=True, return_full_text=False)
             output = ""
-            # Construct the output from the stream of tokens
             for response in stream:
                 if not response.token.text == "</s>":
                     output += response.token.text
@@ -352,20 +331,15 @@ def model_inference(
                 do_sample=True,
             )
             # Format the prompt for the language model
-            formatted_prompt = format_prompt(
-                f"""You are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You do not say Unnecesarry things Only say thing which is important and relevant. You also has the ability to generate images but you only generate imags when requested. BY Utilizing the following link structure, : ![](https://image.pollinations.ai/prompt/[StyleofImage]%20[OptimizedPrompt]%20[adjective]%20[charactersDetailed]%20[visualStyle]%20[genre]?width=[width]&height=[height]&nologo=poll&nofeed=yes&seed=[random])    For image generation, You replace info inside bracets with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience.     Note: 1. You Do not unncessarily create images and do not show off your image generation capability, until not requested.    2. You always Give image link in format ![](url)    3. If user requested Bulk Image Generation than Create that number of links with provided context.    4. Always learn from previous conversation.    5. Always try to connect conversation with history.    6. Do not make conversation too long.    7. Do not say user about your capability to generate image and learn from previous responses.    My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations. I am constantly evolving, ensuring that I remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question. {history} .   [USER] {user_prompt} [OpenGPT 4o]""",
-                chat_history)
+            formatted_prompt = f"""<s>[SYSTEM} You are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You do not say Unnecesarry things Only say thing which is important and relevant. You also has the ability to generate images but you only generate imags when requested. BY Utilizing the following link structure, : ![](https://image.pollinations.ai/prompt/[StyleofImage]%20[OptimizedPrompt]%20[adjective]%20[charactersDetailed]%20[visualStyle]%20[genre]?width=[width]&height=[height]&nologo=poll&nofeed=yes&seed=[random])    For image generation, You replace info inside bracets with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience.     Note: 1. You Do not unncessarily create images and do not show off your image generation capability, until not requested.    2. You always Give image link in format ![](url)    3. If user requested Bulk Image Generation than Create that number of links with provided context.    4. Always learn from previous conversation.    5. Always try to connect conversation with history.    6. Do not make conversation too long.    7. Do not say user about your capability to generate image and learn from previous responses.    My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations. I am constantly evolving, ensuring that I remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question. {history} .   [USER] {user_prompt} [OpenGPT 4o]"""
             # Generate the response from the language model
-            stream = client.text_generation(formatted_prompt, **generate_kwargs, stream=True, details=True,
-                                            return_full_text=False)
+            stream = client.text_generation(formatted_prompt, **generate_kwargs, stream=True, details=True, return_full_text=False)
             output = ""
-            # Construct the output from the stream of tokens
             for response in stream:
                 if not response.token.text == "</s>":
                     output += response.token.text
                 yield output
         update_history(output, user_prompt)
-        print(history)
         return
     else:
         if user_prompt["text"].strip() == "" and not user_prompt["files"]:
