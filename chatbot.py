@@ -257,7 +257,7 @@ def model_inference(
     
         txt = user_prompt["text"]
         img = user_prompt["files"]
-        ext_buffer =f"'user\ntext': '{txt}', 'files': '{img}' assistantAnswer:"
+        ext_buffer =f"'user\ntext': '{txt}', 'files': '{img}' assistant"
     
         video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg")
         image_extensions = Image.registered_extensions()
