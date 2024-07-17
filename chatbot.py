@@ -266,7 +266,7 @@ def model_inference( user_prompt, chat_history, web_search):
         
         inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
         streamer = TextIteratorStreamer(processor, **{"skip_special_tokens": True})
-        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1024, do_sample=True)
+        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1024)
         generated_text = ""
     
         thread = Thread(target=model.generate, kwargs=generation_kwargs)
