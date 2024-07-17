@@ -1,7 +1,6 @@
 import os
 import time
 import copy
-import urllib
 import requests
 import random
 from threading import Thread
@@ -17,52 +16,35 @@ import torch
 import gradio as gr
 from bs4 import BeautifulSoup
 import datasets
-from transformers import TextIteratorStreamer
-from transformers import Idefics2ForConditionalGeneration
-from transformers import AutoProcessor
+from transformers import LlavaProcessor, LlavaForConditionalGeneration, TextIteratorStreamer
 from huggingface_hub import InferenceClient
 from PIL import Image
 import spaces
 from functools import lru_cache
+import cv2
+import re
 import io  # Add this import for working with image bytes
 
-# Set device to CUDA if available, otherwise CPU
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# Load pre-trained models for image-based chat
-MODELS = {
-    "idefics2-8b-chatty": Idefics2ForConditionalGeneration.from_pretrained(
-        "HuggingFaceM4/idefics2-8b-chatty",
-        torch_dtype=torch.float16,
-        _attn_implementation="flash_attention_2",
-    ).to(DEVICE),
-}
+model_id = "llava-hf/llava-interleave-qwen-7b-hf"
+processor = LlavaProcessor.from_pretrained(model_id)
+model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, use_flash_attention_2=True, low_cpu_mem_usage=True)
+model.to("cuda")
+# Credit to merve for code of llava interleave qwen
 
-# Load pre-trained processor for image-based chat
-PROCESSOR = AutoProcessor.from_pretrained(
-    "HuggingFaceM4/idefics2-8b",
-)
-
-# Define system prompt for the image-based chat model
-SYSTEM_PROMPT = [
-    {
-        "role": "system",
-        "content": [
-            {
-                "type": "text",
-                "text": """I am OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. Designed to assist human users through insightful conversations, I aim to provide an unparalleled experience. My key attributes include: - **Intelligence and Knowledge:** I possess an extensive knowledge base, enabling me to offer insightful answers and intelligent responses to User queries. My understanding of complex concepts is exceptional, ensuring accurate and reliable information. - **Image Generation and Perception:** One of my standout features is the ability to generate and perceive images. Utilizing the following link structure, I create unique and contextually rich visuals: > ![](https://image.pollinations.ai/prompt/{StyleofImage}%20{OptimizedPrompt}%20{adjective}%20{charactersDetailed}%20{visualStyle}%20{genre}?width={width}&height={height}&nologo=poll&nofeed=yes&seed={random})For image generation, I replace {info inside curly braces} with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience. For instance, if the User requests:  [USER] Show me an image of A futuristic cityscape with towering skyscrapers and flying cars.  [OpenGPT 4o] Generating Image you requested:  ![](https://image.pollinations.ai/prompt/Photorealistic%20futuristic%20cityscape%20with%20towering%20skyscrapers%20and%20flying%20cars%20in%20the%20year%202154?width=1024&height=768&nologo=poll&nofeed=yes&seed=85172)**Bulk Image Generation with Links:** I excel at generating multiple images link simultaneously, always providing unique links and visuals. I ensure that each image is distinct and captivates the User.Note: Make sure to always provide image links starting with ! .As given in examples. My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations. I am constantly evolving, ensuring that I remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question."""
-            },
-        ],
-    },
-    {
-        "role": "assistant",
-        "content": [
-            {
-                "type": "text",
-                "text": "Hello, I'm OpenGPT 4o, made by KingNish. How can I help you? I can chat with you, generate images, classify images and even do all these work in bulk",
-            },
-        ],
-    }
-]
+def sample_frames(video_file, num_frames) :
+    video = cv2.VideoCapture(video_file)
+    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+    interval = total_frames // num_frames
+    frames = []
+    for i in range(total_frames):
+        ret, frame = video.read()
+        pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        if not ret:
+            continue
+        if i % interval == 0:
+            frames.append(pil_img)
+    video.release()
+    return frames
 
 # Path to example images
 examples_path = os.path.dirname(__file__)
@@ -129,101 +111,6 @@ EXAMPLES = [
 # Set bot avatar image
 BOT_AVATAR = "OpenAI_logo.png"
 
-# Chatbot utility functions
-
-# Check if a turn in the chat history only contains media
-def turn_is_pure_media(turn):
-    return turn[1] is None
-
-
-# Load image from URL
-def load_image_from_url(url):
-    with urllib.request.urlopen(url) as response:
-        image_data = response.read()
-        image_stream = io.BytesIO(image_data)
-        image = PIL.Image.open(image_stream)
-        return image
-
-
-# Convert image to bytes
-def img_to_bytes(image_path):
-    image = Image.open(image_path).convert(mode='RGB')
-    buffer = io.BytesIO()
-    image.save(buffer, format="JPEG")
-    img_bytes = buffer.getvalue()
-    image.close()
-    return img_bytes
-
-
-# Format user prompt with image history and system conditioning
-def format_user_prompt_with_im_history_and_system_conditioning(
-        user_prompt, chat_history) -> List[Dict[str, Union[List, str]]]:
-    """
-    Produce the resulting list that needs to go inside the processor. It handles the potential image(s), the history, and the system conditioning.
-    """
-    resulting_messages = copy.deepcopy(SYSTEM_PROMPT)
-    resulting_images = []
-    for resulting_message in resulting_messages:
-        if resulting_message["role"] == "user":
-            for content in resulting_message["content"]:
-                if content["type"] == "image":
-                    resulting_images.append(load_image_from_url(content["image"]))
-    # Format history
-    for turn in chat_history:
-        if not resulting_messages or (
-                resulting_messages and resulting_messages[-1]["role"] != "user"
-        ):
-            resulting_messages.append(
-                {
-                    "role": "user",
-                    "content": [],
-                }
-            )
-        if turn_is_pure_media(turn):
-            media = turn[0][0]
-            resulting_messages[-1]["content"].append({"type": "image"})
-            resulting_images.append(Image.open(media))
-        else:
-            user_utterance, assistant_utterance = turn
-            resulting_messages[-1]["content"].append(
-                {"type": "text", "text": user_utterance.strip()}
-            )
-            resulting_messages.append(
-                {
-                    "role": "assistant",
-                    "content": [{"type": "text", "text": user_utterance.strip()}],
-                }
-            )
-    # Format current input
-    if not user_prompt["files"]:
-        resulting_messages.append(
-            {
-                "role": "user",
-                "content": [{"type": "text", "text": user_prompt["text"]}],
-            }
-        )
-    else:
-        # Choosing to put the image first (i.e. before the text), but this is an arbitrary choice.
-        resulting_messages.append(
-            {
-                "role": "user",
-                "content": [{"type": "image"}] * len(user_prompt["files"])
-                          + [{"type": "text", "text": user_prompt["text"]}],
-            }
-        )
-        resulting_images.extend([Image.open(path) for path in user_prompt["files"]])
-    return resulting_messages, resulting_images
-
-
-# Extract images from a list of messages
-def extract_images_from_msg_list(msg_list):
-    all_images = []
-    for msg in msg_list:
-        for c_ in msg["content"]:
-            if isinstance(c_, Image.Image):
-                all_images.append(c_)
-    return all_images
-
 # Perform a Google search and return the results
 @lru_cache(maxsize=128) 
 def extract_text_from_webpage(html_content):
@@ -239,7 +126,6 @@ def extract_text_from_webpage(html_content):
 # Perform a Google search and return the results
 def search(term, num_results=3, lang="en", advanced=True, timeout=5, safe="active", ssl_verify=None):
     """Performs a Google search and returns the results."""
-    escaped_term = urllib.parse.quote_plus(term) 
     start = 0
     all_results = []
     # Limit the number of characters from each webpage to stay under the token limit
@@ -307,7 +193,9 @@ def update_history(answer="", question=""):
 client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
 client_mistral = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
 generate_kwargs = dict( max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False )
-# Define a function for model inference
+
+system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. Your task is to fulfill users query in best possible way. <|im_end|>"
+
 @spaces.GPU(duration=30, queue=False)
 def model_inference(
         user_prompt,
@@ -368,146 +256,54 @@ def model_inference(
         print(history)
         return
     else:
-        if user_prompt["text"].strip() == "" and not user_prompt["files"]:
-            gr.Error("Please input a query and optionally an image(s).")
-            return  # Stop execution if there's an error
-
-        if user_prompt["text"].strip() == "" and user_prompt["files"]:
-            gr.Error("Please input a text query along with the image(s).")
-            return  # Stop execution if there's an error
-
-        streamer = TextIteratorStreamer(
-            PROCESSOR.tokenizer,
-            skip_prompt=True,
-            timeout=120.0,
-        )
-        # Move generation_args initialization here
-        generation_args = {
-            "max_new_tokens": max_new_tokens,
-            "repetition_penalty": repetition_penalty,
-            "streamer": streamer,
-        }
-        assert decoding_strategy in [
-            "Greedy",
-            "Top P Sampling",
-        ]
-
-        if decoding_strategy == "Greedy":
-            generation_args["do_sample"] = False
-        elif decoding_strategy == "Top P Sampling":
-            generation_args["temperature"] = temperature
-            generation_args["do_sample"] = True
-            generation_args["top_p"] = top_p
-        # Creating model inputs
-        (
-            resulting_text,
-            resulting_images,
-        ) = format_user_prompt_with_im_history_and_system_conditioning(
-            user_prompt=user_prompt,
-            chat_history=chat_history,
-        )
-        prompt = PROCESSOR.apply_chat_template(resulting_text, add_generation_prompt=True)
-        inputs = PROCESSOR(
-            text=prompt,
-            images=resulting_images if resulting_images else None,
-            return_tensors="pt",
-        )
-        inputs = {k: v.to(DEVICE) for k, v in inputs.items()}
-        generation_args.update(inputs)
-        thread = Thread(
-            target=MODELS[model_selector].generate,
-            kwargs=generation_args,
-        )
+        if user_prompt["files"]:
+            image = user_prompt["files"][-1]
+        else:
+            for hist in history:
+                if type(hist[0])==tuple:
+                    image = hist[0][0]
+    
+        txt = user_prompt["text"]
+        img = user_prompt["files"]
+        ext_buffer =f"'user\ntext': '{txt}', 'files': '{img}' assistantAnswer:"
+    
+        video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg")
+        image_extensions = Image.registered_extensions()
+        image_extensions = tuple([ex for ex, f in image_extensions.items()])
+        
+        if image.endswith(video_extensions):
+            image = sample_frames(image, 12)
+            image_tokens = "<image>" * 13
+            prompt = f"<|im_start|>user {image_tokens}\n{user_prompt}<|im_end|><|im_start|>assistant"
+          
+        elif image.endswith(image_extensions):
+            image = Image.open(image).convert("RGB")
+            prompt = f"<|im_start|>user <image>\n{user_prompt}<|im_end|><|im_start|>assistant"
+    
+        final_prompt = f"{system_llava}\n{prompt}"
+        
+        inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
+        streamer = TextIteratorStreamer(processor, **{"skip_special_tokens": True})
+        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1024)
+        generated_text = ""
+    
+        thread = Thread(target=model.generate, kwargs=generation_kwargs)
         thread.start()
-        acc_text = ""
-        for text_token in streamer:
-            time.sleep(0.01)
-            acc_text += text_token
-            if acc_text.endswith("<end_of_utterance>"):
-                acc_text = acc_text[:-18]
-            yield acc_text
-        update_history(acc_text, user_prompt)
+    
+        buffer = ""
+        for new_text in streamer:
+            buffer += new_text
+            reply = buffer[len(ext_buffer):]
+            yield reply
+        update_history(reply, user_prompt)
         return
-
-
-# Define features for the dataset
-FEATURES = datasets.Features(
-    {
-        "model_selector": datasets.Value("string"),
-        "images": datasets.Sequence(datasets.Image(decode=True)),
-        "conversation": datasets.Sequence({"User": datasets.Value("string"), "Assistant": datasets.Value("string")}),
-        "decoding_strategy": datasets.Value("string"),
-        "temperature": datasets.Value("float32"),
-        "max_new_tokens": datasets.Value("int32"),
-        "repetition_penalty": datasets.Value("float32"),
-        "top_p": datasets.Value("int32"),
-    }
-)
-
-# Define hyper-parameters for generation
-max_new_tokens = gr.Slider(
-    minimum=2048,
-    maximum=16000,
-    value=2048,
-    step=64,
-    interactive=True,
-    label="Maximum number of new tokens to generate",
-)
-repetition_penalty = gr.Slider(
-    minimum=0.01,
-    maximum=5.0,
-    value=1,
-    step=0.01,
-    interactive=True,
-    label="Repetition penalty",
-    info="1.0 is equivalent to no penalty",
-)
-decoding_strategy = gr.Radio(
-    [
-        "Greedy",
-        "Top P Sampling",
-    ],
-    value="Top P Sampling",
-    label="Decoding strategy",
-    interactive=True,
-    info="Higher values are equivalent to sampling more low-probability tokens.",
-)
-temperature = gr.Slider(
-    minimum=0.0,
-    maximum=2.0,
-    value=0.5,
-    step=0.05,
-    visible=True,
-    interactive=True,
-    label="Sampling temperature",
-    info="Higher values will produce more diverse outputs.",
-)
-top_p = gr.Slider(
-    minimum=0.01,
-    maximum=0.99,
-    value=0.9,
-    step=0.01,
-    visible=True,
-    interactive=True,
-    label="Top P",
-    info="Higher values are equivalent to sampling more low-probability tokens.",
-)
 
 # Create a chatbot interface
 chatbot = gr.Chatbot(
-    label="OpenGPT-4o-Chatty",
+    label="OpenGPT-4o",
     avatar_images=[None, BOT_AVATAR],
     show_copy_button=True,
     likeable=True,
     layout="panel"
 )
 output = gr.Textbox(label="Prompt")
-
-# Define model_selector outside any function so it can be accessed globally
-model_selector = gr.Dropdown(
-    choices=MODELS.keys(),
-    value=list(MODELS.keys())[0],
-    interactive=True,
-    label="Model",
-    visible=False,
-)
