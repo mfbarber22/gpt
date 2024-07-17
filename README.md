@@ -4,7 +4,7 @@ emoji: 🔥
 colorFrom: blue
 colorTo: indigo
 sdk: gradio
-sdk_version: 4.33.0
+sdk_version: 4.36.1
 app_file: app.py
 pinned: true
 short_description: GPT 4o like bot.
@@ -24,6 +24,7 @@ GPT 4o vs OpenGPT 4o
 | Image Generation      | Paid only                   | Yes                   |
 |Video Generation|No|Yes|
 | Image QnA  | Yes                   | Yes                   |
+| Video QnA | Yes (but very limited) | Yes |
 | Voice Chat            | Yes but Very Limited           | Yes (Unlimited)                  |
 | Video Chat  | Paid Only | Yes |
 | Multilingual          | Yes                   | Chat Only                    |
