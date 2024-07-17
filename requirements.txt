@@ -13,4 +13,4 @@ sentencepiece
 soxr
 pydub
 edge-tts
-duckduckgo_search
+groq
