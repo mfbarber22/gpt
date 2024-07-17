@@ -262,13 +262,13 @@ def model_inference(
         img = user_prompt["files"]
         ext_buffer =f"'user\ntext': '{txt}', 'files': '{img}' assistant"
     
-        video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg")
+        video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
         image_extensions = Image.registered_extensions()
         image_extensions = tuple([ex for ex, f in image_extensions.items()])
         
         if image.endswith(video_extensions):
             image = sample_frames(image, 12)
-            image_tokens = "<image>" * 13
+            image_tokens = "<image>" * int(len(image))
             prompt = f"<|im_start|>user {image_tokens}\n{user_prompt}<|im_end|><|im_start|>assistant"
           
         elif image.endswith(image_extensions):
