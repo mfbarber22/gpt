@@ -14,3 +14,4 @@ soxr
 pydub
 edge-tts
 groq
+opencv-python
