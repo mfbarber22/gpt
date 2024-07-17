@@ -35,19 +35,27 @@ model.to("cuda")
 # Credit to merve for code of llava interleave qwen
 
 def sample_frames(video_file, num_frames) :
-    video = cv2.VideoCapture(video_file)
-    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    interval = total_frames // num_frames
-    frames = []
-    for i in range(total_frames):
-        ret, frame = video.read()
-        pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        if not ret:
-            continue
-        if i % interval == 0:
-            frames.append(pil_img)
-    video.release()
-    return frames
+    try:
+        video = cv2.VideoCapture(video_file)
+        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = int(video.get(cv2.CAP_PROP_FPS))
+        # extracts 5 images/sec of video
+        num_frames = ((total_frames//fps)*5) 
+        interval = total_frames // num_frames
+        frames = []
+        for i in range(total_frames):
+            ret, frame = video.read()
+            pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            if not ret:
+                continue
+            if i % interval == 0:
+                frames.append(pil_img)
+        video.release()
+        return frames
+    except:
+        frames=[]
+        return frames
+        
 
 # Path to example images
 examples_path = os.path.dirname(__file__)
@@ -279,7 +287,7 @@ def model_inference(
         
         inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
         streamer = TextIteratorStreamer(processor, **{"skip_special_tokens": True})
-        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048, do_sample=True, top_p=0.8, temprature=0.7)
+        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048, do_sample=True)
         generated_text = ""
     
         thread = Thread(target=model.generate, kwargs=generation_kwargs)
