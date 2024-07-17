@@ -200,11 +200,7 @@ generate_kwargs = dict( max_new_tokens=4000, do_sample=True, stream=True, detail
 system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible result and explaination to user.<|im_end|>"
 
 @spaces.GPU(duration=60, queue=False)
-def model_inference(
-        user_prompt,
-        chat_history,
-        web_search,
-):
+def model_inference( user_prompt, chat_history, web_search):
     # Define generation_args at the beginning of the function
     generation_args = {}  
 
@@ -251,12 +247,7 @@ def model_inference(
                     output += response.token.text
                     yield output
     else:
-        if user_prompt["files"]:
-            image = user_prompt["files"][-1]
-        else:
-            for hist in history:
-                if type(hist[0])==tuple:
-                    image = hist[0][0]
+        image = user_prompt["files"][-1]
     
         txt = user_prompt["text"]
         img = user_prompt["files"]
@@ -279,7 +270,7 @@ def model_inference(
         
         inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
         streamer = TextIteratorStreamer(processor, **{"skip_special_tokens": True})
-        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048, do_sample=True)
+        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1024, do_sample=True)
         generated_text = ""
     
         thread = Thread(target=model.generate, kwargs=generation_kwargs)
