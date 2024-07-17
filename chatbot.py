@@ -25,6 +25,9 @@ import cv2
 import re
 import io  # Add this import for working with image bytes
 
+# You can also use models that are commented below
+# model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
+# model_id = "llava-hf/llava-interleave-qwen-7b-hf"
 model_id = "llava-hf/llava-interleave-qwen-7b-dpo-hf"
 processor = LlavaProcessor.from_pretrained(model_id)
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, use_flash_attention_2=True, low_cpu_mem_usage=True)
