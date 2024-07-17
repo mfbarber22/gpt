@@ -279,7 +279,7 @@ def model_inference(
         
         inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
         streamer = TextIteratorStreamer(processor, **{"skip_special_tokens": True})
-        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
+        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048, do_sample=True, top_p=0.8, temprature=0.7)
         generated_text = ""
     
         thread = Thread(target=model.generate, kwargs=generation_kwargs)
