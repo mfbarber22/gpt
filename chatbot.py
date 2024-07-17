@@ -265,7 +265,7 @@ def model_inference( user_prompt, chat_history, web_search):
         final_prompt = f"{system_llava}\n{prompt}"
         
         inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
-        streamer = TextIteratorStreamer(processor, **{"skip_special_tokens": True})
+        streamer = TextIteratorStreamer(processor, skip_prompt=True, **{"skip_special_tokens": True})
         generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1024)
         generated_text = ""
     
@@ -275,8 +275,7 @@ def model_inference( user_prompt, chat_history, web_search):
         buffer = ""
         for new_text in streamer:
             buffer += new_text
-            reply = buffer[len(ext_buffer):]
-            yield reply
+            yield buffer
 
 # Create a chatbot interface
 chatbot = gr.Chatbot(
