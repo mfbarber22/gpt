@@ -192,18 +192,9 @@ def format_prompt(user_prompt, chat_history):
     prompt += f"[INST] {user_prompt} [/INST]"
     return prompt
 
-chat_history = []
-history = ""
-
-def update_history(answer="", question=""):
-    global chat_history
-    global history
-    history += f"([ USER: {question}, OpenGPT 4o: {answer} ]),"
-    chat_history.append((question, answer))
-    return history
 
 client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
-client_mistral = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
+client_mistral = InferenceClient("HuggingFaceH4/zephyr-7b-beta")
 generate_kwargs = dict( max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False )
 
 system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible result and explaination to user.<|im_end|>"
@@ -236,8 +227,7 @@ def model_inference(
                 messages += f"\n<|im_start|>assistant\n{str(msg[1])}<|im_end|>"
 
             messages+=f"\n<|im_start|>user\n{user_prompt}<|im_end|>\n<|im_start|>web_result\n{web2}<|im_end|>\n<|im_start|>assistant\n"
-            stream = client_mixtral.text_generation(formatted_prompt, **generate_kwargs)
-            stream = client_mixtral.text_generation(messages, **generate_kwargs)
+            stream = client_mistral.text_generation(messages, **generate_kwargs)
             output = ""
             # Construct the output from the stream of tokens
             for response in stream:
