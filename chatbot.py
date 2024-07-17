@@ -200,12 +200,6 @@ system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable
 def model_inference(
         user_prompt,
         chat_history,
-        model_selector,
-        decoding_strategy,
-        temperature,
-        max_new_tokens,
-        repetition_penalty,
-        top_p,
         web_search,
 ):
     # Define generation_args at the beginning of the function
