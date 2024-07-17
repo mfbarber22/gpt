@@ -40,7 +40,10 @@ def sample_frames(video_file, num_frames) :
         total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = int(video.get(cv2.CAP_PROP_FPS))
         # extracts 5 images/sec of video
-        num_frames = ((total_frames//fps)*5) 
+        if (total_frames/fps) < 3: 
+            num_frames = 12
+        else:
+            num_frames = ((total_frames//fps)*5) 
         interval = total_frames // num_frames
         frames = []
         for i in range(total_frames):
