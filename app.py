@@ -81,19 +81,8 @@ with gr.Blocks() as livechat:
         outputs=gr.Textbox(label="Answer")
     )
 
-# Other blocks (instant, dalle, playground, image, instant2, video)
-with gr.Blocks() as instant:
-    gr.HTML("<iframe src='https://kingnish-sdxl-flash.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
-
-with gr.Blocks() as dalle:
-    gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
-
-with gr.Blocks() as playground:
-    gr.HTML("<iframe src='https://fluently-fluently-playground.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
-
 with gr.Blocks() as image:
-    gr.Markdown("""### More models are coming""")
-    gr.TabbedInterface([ instant, dalle, playground], ['Instant🖼️','Powerful🖼️', 'Playground🖼'])    
+    gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
 
 with gr.Blocks() as instant2:
     gr.HTML("<iframe src='https://kingnish-instant-video.hf.space' width='100%' height='3000px' style='border-radius: 8px;'></iframe>")
