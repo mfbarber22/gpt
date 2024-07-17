@@ -27,8 +27,8 @@ import io  # Add this import for working with image bytes
 
 # You can also use models that are commented below
 # model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
-# model_id = "llava-hf/llava-interleave-qwen-7b-hf"
-model_id = "llava-hf/llava-interleave-qwen-7b-dpo-hf"
+model_id = "llava-hf/llava-interleave-qwen-7b-hf"
+# model_id = "llava-hf/llava-interleave-qwen-7b-dpo-hf"
 processor = LlavaProcessor.from_pretrained(model_id)
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, use_flash_attention_2=True, low_cpu_mem_usage=True)
 model.to("cuda")
@@ -197,7 +197,7 @@ generate_kwargs = dict( max_new_tokens=4000, do_sample=True, stream=True, detail
 
 system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible result and explaination to user.<|im_end|>"
 
-@spaces.GPU(duration=30, queue=False)
+@spaces.GPU(duration=60, queue=False)
 def model_inference(
         user_prompt,
         chat_history,
