@@ -201,10 +201,6 @@ system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable
 
 @spaces.GPU(duration=60, queue=False)
 def model_inference( user_prompt, chat_history, web_search):
-    # Define generation_args at the beginning of the function
-    generation_args = {}  
-
-    # Web search logic
     if not user_prompt["files"]:
         if web_search is True:
             
@@ -247,7 +243,10 @@ def model_inference( user_prompt, chat_history, web_search):
                     output += response.token.text
                     yield output
     else:
-        image = user_prompt["files"][-1]
+        if len(message.files) == 1:
+            image = [message.files[0].path]
+        elif len(message.files) > 1:
+            image = [msg.path for msg in message.files]
     
         txt = user_prompt["text"]
         img = user_prompt["files"]
