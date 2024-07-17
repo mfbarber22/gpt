@@ -25,7 +25,7 @@ import cv2
 import re
 import io  # Add this import for working with image bytes
 
-model_id = "llava-hf/llava-interleave-qwen-7b-hf"
+model_id = "llava-hf/llava-interleave-qwen-7b-dpo-hf"
 processor = LlavaProcessor.from_pretrained(model_id)
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, use_flash_attention_2=True, low_cpu_mem_usage=True)
 model.to("cuda")
@@ -67,7 +67,7 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "Identify two famous people in the modern world.",
+            "text": "Who are they? Tell me about both of them",
             "files": [f"{examples_path}/example_images/elon_smoking.jpg",
                       f"{examples_path}/example_images/steve_jobs.jpg", ]
         }
@@ -116,10 +116,8 @@ BOT_AVATAR = "OpenAI_logo.png"
 def extract_text_from_webpage(html_content):
     """Extracts visible text from HTML content using BeautifulSoup."""
     soup = BeautifulSoup(html_content, "html.parser")
-    # Remove unwanted tags
     for tag in soup(["script", "style", "header", "footer", "nav", "form", "svg"]):
         tag.extract()
-    # Get the remaining visible text
     visible_text = soup.get_text(strip=True)
     return visible_text
 
@@ -194,7 +192,7 @@ client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
 client_mistral = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
 generate_kwargs = dict( max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False )
 
-system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. Your task is to fulfill users query in best possible way. <|im_end|>"
+system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible result and explaination to user.<|im_end|>"
 
 @spaces.GPU(duration=30, queue=False)
 def model_inference(
@@ -278,7 +276,7 @@ def model_inference(
         
         inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
         streamer = TextIteratorStreamer(processor, **{"skip_special_tokens": True})
-        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1024)
+        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
         generated_text = ""
     
         thread = Thread(target=model.generate, kwargs=generation_kwargs)
