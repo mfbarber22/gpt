@@ -1,7 +1,7 @@
 import gradio as gr
 
 # Import modules from other files
-from chatbot import chatbot, model_inference, BOT_AVATAR, EXAMPLES, model_selector, decoding_strategy, temperature, max_new_tokens, repetition_penalty, top_p
+from chatbot import chatbot, model_inference, BOT_AVATAR, EXAMPLES,
 from live_chat import videochat
 
 # Define Gradio theme
@@ -32,30 +32,6 @@ with gr.Blocks(
         css=""".gradio-container .avatar-container {height: 40px width: 40px !important;} #duplicate-button {margin: auto; color: white; background: #f1a139; border-radius: 100vh; margin-top: 2px; margin-bottom: 2px;}""",
 ) as chat:
     gr.Markdown("### Chat with Image, Chat with Video, Image Generation and Normal Chat")
-    with gr.Row(elem_id="model_selector_row"):
-        # model_selector defined in chatbot.py
-        pass  
-    # decoding_strategy, temperature, top_p defined in chatbot.py
-    decoding_strategy.change(
-        fn=lambda selection: gr.Slider(
-            visible=(
-                    selection
-                    in [
-                        "contrastive_sampling",
-                        "beam_sampling",
-                        "Top P Sampling",
-                        "sampling_top_k",
-                    ]
-            )
-        ),
-        inputs=decoding_strategy,
-        outputs=temperature,
-    )
-    decoding_strategy.change(
-        fn=lambda selection: gr.Slider(visible=(selection in ["Top P Sampling"])),
-        inputs=decoding_strategy,
-        outputs=top_p,
-    )
     gr.ChatInterface(
         fn=model_inference,
         chatbot=chatbot,
@@ -63,12 +39,6 @@ with gr.Blocks(
         multimodal=True,
         cache_examples=False,
         additional_inputs=[
-            model_selector,
-            decoding_strategy,
-            temperature,
-            max_new_tokens,
-            repetition_penalty,
-            top_p,
             gr.Checkbox(label="Web Search", value=False),
         ],
     )    
