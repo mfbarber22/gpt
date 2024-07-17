@@ -243,10 +243,7 @@ def model_inference( user_prompt, chat_history, web_search):
                     output += response.token.text
                     yield output
     else:
-        if len(message.files) == 1:
-            image = [message.files[0].path]
-        elif len(message.files) > 1:
-            image = [msg.path for msg in message.files]
+        image = user_prompt["files"][-1]
     
         txt = user_prompt["text"]
         img = user_prompt["files"]
