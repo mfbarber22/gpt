@@ -1,7 +1,7 @@
 import gradio as gr
 
 # Import modules from other files
-from chatbot import chatbot, model_inference, BOT_AVATAR, EXAMPLES,
+from chatbot import chatbot, model_inference, EXAMPLES
 from live_chat import videochat
 
 # Define Gradio theme
