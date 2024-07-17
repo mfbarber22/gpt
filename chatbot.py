@@ -227,7 +227,7 @@ def model_inference(
                 messages += f"\n<|im_start|>assistant\n{str(msg[1])}<|im_end|>"
 
             messages+=f"\n<|im_start|>user\n{user_prompt}<|im_end|>\n<|im_start|>web_result\n{web2}<|im_end|>\n<|im_start|>assistant\n"
-            stream = client_mistral.text_generation(messages, **generate_kwargs)
+            stream = client_mixtral.text_generation(messages, **generate_kwargs)
             output = ""
             # Construct the output from the stream of tokens
             for response in stream:
