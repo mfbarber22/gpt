@@ -304,6 +304,9 @@ def update_history(answer="", question=""):
     chat_history.append((question, answer))
     return history
 
+client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
+client_mistral = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
+generate_kwargs = dict( max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False )
 # Define a function for model inference
 @spaces.GPU(duration=30, queue=False)
 def model_inference(
@@ -326,19 +329,12 @@ def model_inference(
             """Performs a web search, feeds the results to a language model, and returns the answer."""
             web_results = search(user_prompt["text"])
             web2 = ' '.join([f"Link: {res['link']}\nText: {res['text']}\n\n" for res in web_results])
-            # Load the language model
-            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
-            generate_kwargs = dict(
-                max_new_tokens=4000,
-                do_sample=True,
-            )
             # Format the prompt for the language model
             formatted_prompt = format_prompt(
                 f"""You are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You are provided with WEB info from which you can find informations to answer. You do not say Unnecesarry things Only say thing which is important and relevant. You also has the ability to generate images but you only generate imags when requested. BY Utilizing the following link structure, : ![](https://image.pollinations.ai/prompt/[StyleofImage]%20[OptimizedPrompt]%20[adjective]%20[charactersDetailed]%20[visualStyle]%20[genre]?width=[width]&height=[height]&nologo=poll&nofeed=yes&seed=[random])    For image generation, You replace info inside bracets with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience.     Note: 1. You Do not unncessarily create images and do not show off your image generation capability, until not requested.    2. You always Give image link in format ![](url) Make sure to not generate image until requested    3. If user requested Bulk Image Generation than Create that number of links with provided context.    4. Always learn from previous conversation.    5. Always try to connect conversation with history.    6. Do not make conversation too long.    7. Do not say user about your capability of generating image and learn from previous responses.    My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations.You remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question. Make sure to not generate image until requested [USER] {user_prompt} [WEB] {web2} [OpenGPT 4o]""",
                 chat_history)
             # Generate the response from the language model
-            stream = client.text_generation(formatted_prompt, **generate_kwargs, stream=True, details=True,
-                                            return_full_text=False)
+            stream = client_mistral.text_generation(formatted_prompt, **generate_kwargs)
             output = ""
             # Construct the output from the stream of tokens
             for response in stream:
@@ -346,22 +342,19 @@ def model_inference(
                     output += response.token.text
                 yield output
         else:
-            client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
-            generate_kwargs = dict(
-                max_new_tokens=5000,
-                do_sample=True,
-            )
-            # Format the prompt for the language model
-            formatted_prompt = format_prompt(
-                f"""You are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You do not say Unnecesarry things Only say thing which is important and relevant. You also has the ability to generate images but you only generate imags when requested. BY Utilizing the following link structure, : ![](https://image.pollinations.ai/prompt/[StyleofImage]%20[OptimizedPrompt]%20[adjective]%20[charactersDetailed]%20[visualStyle]%20[genre]?width=[width]&height=[height]&nologo=poll&nofeed=yes&seed=[random])    For image generation, You replace info inside bracets with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience.     Note: 1. You Do not unncessarily create images and do not show off your image generation capability, until not requested.    2. You always Give image link in format ![](url)    3. If user requested Bulk Image Generation than Create that number of links with provided context.    4. Always learn from previous conversation.    5. Always try to connect conversation with history.    6. Do not make conversation too long.    7. Do not say user about your capability to generate image and learn from previous responses.    My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations. I am constantly evolving, ensuring that I remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question. {history} .   [USER] {user_prompt} [OpenGPT 4o]""",
-                chat_history)
-            # Generate the response from the language model
-            stream = client.text_generation(formatted_prompt, **generate_kwargs, stream=True, details=True,
-                                            return_full_text=False)
+            messages = f"<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You do not say Unnecesarry things Only say thing which is important and relevant. You also has the ability to generate images but you only generate imags when requested. BY Utilizing the following link structure, : ![](https://image.pollinations.ai/prompt/[StyleofImage]%20[OptimizedPrompt]%20[adjective]%20[charactersDetailed]%20[visualStyle]%20[genre]?width=[width]&height=[height]&nologo=poll&nofeed=yes&seed=[random])    For image generation, You replace info inside bracets with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience.     Note: 1. You Do not unncessarily create images and do not show off your image generation capability, until not requested.    2. You always Give image link in format ![](url)    3. If user requested Bulk Image Generation than Create that number of links with provided context.    4. Always learn from previous conversation.    5. Always try to connect conversation with history.    6. Do not make conversation too long.    7. Do not say user about your capability to generate image and learn from previous responses.    My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations. I am constantly evolving, ensuring that I remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question.<|im_end|>"
+    
+            for msg in history:
+                messages += f"\n<|im_start|>user\n{str(msg[0])}<|im_end|>"
+                messages += f"\n<|im_start|>assistant\n{str(msg[1])}<|im_end|>"
+        
+            messages+=f"\n<|im_start|>user\n{user_prompt}<|im_end|>\n<|im_start|>assistant\n"
+
+            stream = client_mixtral.text_generation(messages, **generate_kwargs)
             output = ""
             # Construct the output from the stream of tokens
             for response in stream:
-                if not response.token.text == "</s>":
+                if not response.token.text == "<|im_end|>":
                     output += response.token.text
                 yield output
         update_history(output, user_prompt)
