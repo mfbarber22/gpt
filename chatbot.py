@@ -237,14 +237,13 @@ def model_inference(
 
             messages+=f"\n<|im_start|>user\n{user_prompt}<|im_end|>\n<|im_start|>web_result\n{web2}<|im_end|>\n<|im_start|>assistant\n"
             stream = client_mixtral.text_generation(formatted_prompt, **generate_kwargs)
+            stream = client_mixtral.text_generation(messages, **generate_kwargs)
             output = ""
-            
-            gr.Info("Generating Answer")
-            
+            # Construct the output from the stream of tokens
             for response in stream:
-                if not response.token.text == "</s>":
+                if not response.token.text == "<|im_end|>":
                     output += response.token.text
-                yield output
+                    yield output
         else:
             messages = f"<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You do not say Unnecesarry things Only say thing which is important and relevant. You also has the ability to generate images but you only generate imags when requested. BY Utilizing the following link structure, : ![](https://image.pollinations.ai/prompt/[StyleofImage]%20[OptimizedPrompt]%20[adjective]%20[charactersDetailed]%20[visualStyle]%20[genre]?width=[width]&height=[height]&nologo=poll&nofeed=yes&seed=[random])    For image generation, You replace info inside bracets with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience.     Note: 1. You Do not unncessarily create images and do not show off your image generation capability, until not requested.    2. You always Give image link in format ![](url)    3. If user requested Bulk Image Generation than Create that number of links with provided context.    4. Always learn from previous conversation.    5. Always try to connect conversation with history.    6. Do not make conversation too long.    7. Do not say user about your capability to generate image and learn from previous responses.    My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations. I am constantly evolving, ensuring that I remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question.<|im_end|>"
     
@@ -260,10 +259,7 @@ def model_inference(
             for response in stream:
                 if not response.token.text == "<|im_end|>":
                     output += response.token.text
-                yield output
-        update_history(output, user_prompt)
-        print(history)
-        return
+                    yield output
     else:
         if user_prompt["files"]:
             image = user_prompt["files"][-1]
@@ -304,8 +300,6 @@ def model_inference(
             buffer += new_text
             reply = buffer[len(ext_buffer):]
             yield reply
-        update_history(reply, user_prompt)
-        return
 
 # Create a chatbot interface
 chatbot = gr.Chatbot(
