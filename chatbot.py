@@ -82,6 +82,12 @@ EXAMPLES = [
     ],
     [
         {
+            "text": "What's written on this paper",
+            "files": [f"{examples_path}/example_images/paper_with_text.png"],
+        }
+    ],
+    [
+        {
             "text": "Who are they? Tell me about both of them",
             "files": [f"{examples_path}/example_images/elon_smoking.jpg",
                       f"{examples_path}/example_images/steve_jobs.jpg", ]
@@ -99,13 +105,7 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "What's written on this paper",
-            "files": [f"{examples_path}/example_images/paper_with_text.png"],
-        }
-    ],
-    [
-        {
-            "text": "Create an online ad for this product.",
+            "text": "Create an ad script for this product.",
             "files": [f"{examples_path}/example_images/shampoo.jpg"],
         }
     ],
@@ -268,7 +268,7 @@ def model_inference( user_prompt, chat_history, web_search):
         
         inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
         streamer = TextIteratorStreamer(processor, skip_prompt=True, **{"skip_special_tokens": True})
-        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1024)
+        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
         generated_text = ""
     
         thread = Thread(target=model.generate, kwargs=generation_kwargs)
