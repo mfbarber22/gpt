@@ -42,6 +42,8 @@ def sample_frames(video_file, num_frames) :
         # extracts 5 images/sec of video
         if (total_frames/fps) < 3: 
             num_frames = 12
+        elif (total_frames/fps) > 5:
+            num_frames = 24
         else:
             num_frames = ((total_frames//fps)*5) 
         interval = total_frames // num_frames
@@ -75,7 +77,7 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "Explain the cause of Accident",
+            "text": "What unusual happens in this video.",
             "files": [f"{examples_path}/example_video/accident.mp4"],
         }
     ],
