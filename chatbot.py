@@ -78,7 +78,7 @@ EXAMPLES = [
     [
         {
             "text": "What unusual happens in this video.",
-            "files": [f"{examples_path}/example_video/accident.mp4"],
+            "files": [f"{examples_path}/example_video/accident.gif"],
         }
     ],
     [
@@ -100,8 +100,8 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "Chase wants to buy 4 kilograms of oval beads and 5 kilograms of star-shaped beads. How much will he spend?",
-            "files": [f"{examples_path}/example_images/mmmu_example.jpeg"],
+            "text": "read what's written on the paper",
+            "files": [f"{examples_path}/example_images/paper_with_text.png"],
         }
     ],
     [
