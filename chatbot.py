@@ -76,7 +76,7 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "explain this video, Identify a superhero in thi clip",
+            "text": "What's name of superhero in this clip",
             "files": [f"{examples_path}/example_video/spiderman.gif"],
         }
     ],
@@ -198,7 +198,7 @@ client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
 client_mistral = InferenceClient("HuggingFaceH4/zephyr-7b-beta")
 generate_kwargs = dict( max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False )
 
-system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed result and explaination to user.<|im_end|>"
+system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way.<|im_end|>"
 
 @spaces.GPU(duration=60, queue=False)
 def model_inference( user_prompt, chat_history, web_search):
