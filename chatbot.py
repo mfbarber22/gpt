@@ -27,8 +27,8 @@ import io  # Add this import for working with image bytes
 
 # You can also use models that are commented below
 # model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
-# model_id = "llava-hf/llava-interleave-qwen-7b-hf"
-model_id = "llava-hf/llava-interleave-qwen-7b-dpo-hf"
+model_id = "llava-hf/llava-interleave-qwen-7b-hf"
+# model_id = "llava-hf/llava-interleave-qwen-7b-dpo-hf"
 processor = LlavaProcessor.from_pretrained(model_id)
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, use_flash_attention_2=True, low_cpu_mem_usage=True)
 model.to("cuda")
@@ -250,6 +250,7 @@ def model_inference( user_prompt, chat_history, web_search):
         
         if image.endswith(video_extensions):
             image = sample_frames(image)
+            print(len(image))
             image_tokens = "<image>" * int(len(image))
             prompt = f"<|im_start|>user {image_tokens}\n{user_prompt}<|im_end|><|im_start|>assistant"
           
