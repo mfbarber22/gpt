@@ -76,6 +76,12 @@ EXAMPLES = [
     ],
     [
         {
+            "text": "explain this video, Identify a superhero in thi clip",
+            "files": [f"{examples_path}/example_video/spiderman.gif"],
+        }
+    ],
+    [
+        {
             "text": "Who are they? Tell me about both of them",
             "files": [f"{examples_path}/example_images/elon_smoking.jpg",
                       f"{examples_path}/example_images/steve_jobs.jpg", ]
@@ -93,7 +99,7 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "read what's written on the paper",
+            "text": "What's written on this paper",
             "files": [f"{examples_path}/example_images/paper_with_text.png"],
         }
     ],
