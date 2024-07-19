@@ -281,7 +281,6 @@ def model_inference( user_prompt, chat_history, web_search):
             prompt = f"<|im_start|>user {toks}\n{user_prompt}<|im_end|><|im_start|>assistant"
             image = image_list
 
-        prompt = f"<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way.<|im_end|>\n{prompt}"
         inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
         streamer = TextIteratorStreamer(processor, skip_prompt=True, **{"skip_special_tokens": True})
         generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
