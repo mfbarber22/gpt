@@ -243,12 +243,12 @@ def model_inference( user_prompt, chat_history, web_search):
                     yield output
     else:
         message = user_prompt
-        if len(message.["files"]) == 1:
-            image = [message.["files"][0].path]
-        elif len(message.["files"]) > 1:
-            image = [msg.path for msg in message.["files"]]
+        if len(message["files"]) == 1:
+            image = [message["files"][0].path]
+        elif len(message["files"]) > 1:
+            image = [msg.path for msg in message["files"]]
     
-        txt = message.["text"]
+        txt = message["text"]
     
         video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
         image_extensions = Image.registered_extensions()
