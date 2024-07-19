@@ -198,6 +198,8 @@ client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
 client_mistral = InferenceClient("HuggingFaceH4/zephyr-7b-beta")
 generate_kwargs = dict( max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False )
 
+system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way.<|im_end|>"
+
 @spaces.GPU(duration=60, queue=False)
 def model_inference( user_prompt, chat_history, web_search):
     if not user_prompt["files"]:
@@ -242,45 +244,28 @@ def model_inference( user_prompt, chat_history, web_search):
                     output += response.token.text
                     yield output
     else:
-        message = user_prompt
-        if len(message["files"]) == 1:
-            image = [message["files"][0].path]
-        elif len(message["files"]) > 1:
-            image = [msg.path for msg in message["files"]]
+        image = user_prompt["files"][-1]
     
-        txt = message["text"]
+        txt = user_prompt["text"]
+        img = user_prompt["files"]
+        ext_buffer =f"'user\ntext': '{txt}', 'files': '{img}' assistant"
     
         video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
         image_extensions = Image.registered_extensions()
         image_extensions = tuple([ex for ex, f in image_extensions.items()])
-
-        if len(image) == 1:
-            if image.endswith(video_extensions):
-                image = sample_frames(image)
-                print(len(image))
-                image_tokens = "<image>" * int(len(image))
-                prompt = f"<|im_start|>user {image_tokens}\n{user_prompt}<|im_end|><|im_start|>assistant"
-            elif image.endswith(image_extensions):
-                image = Image.open(image).convert("RGB")
-                prompt = f"<|im_start|>user <image>\n{user_prompt}<|im_end|><|im_start|>assistant"
-
-        elif len(image) > 1:
-            image_list = []
         
-            for img in image:
-                if img.endswith(image_extensions):
-                    img = Image.open(img).convert("RGB")
-                    image_list.append(img)
+        if image.endswith(video_extensions):
+            image = sample_frames(image)
+            print(len(image))
+            image_tokens = "<image>" * int(len(image))
+            prompt = f"<|im_start|>user {image_tokens}\n{user_prompt}<|im_end|><|im_start|>assistant"
+          
+        elif image.endswith(image_extensions):
+            image = Image.open(image).convert("RGB")
+            prompt = f"<|im_start|>user <image>\n{user_prompt}<|im_end|><|im_start|>assistant"
+    
+        final_prompt = f"{system_llava}\n{prompt}"
         
-                elif img.endswith(video_extensions):        
-                    frames = sample_frames(img)
-                    for frame in frames:
-                        image_list.append(frame)
-
-            toks = "<image>" * len(image_list)
-            prompt = f"<|im_start|>user {toks}\n{user_prompt}<|im_end|><|im_start|>assistant"
-            image = image_list
-
         inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
         streamer = TextIteratorStreamer(processor, skip_prompt=True, **{"skip_special_tokens": True})
         generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
