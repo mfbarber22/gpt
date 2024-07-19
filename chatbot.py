@@ -266,7 +266,7 @@ def model_inference( user_prompt, chat_history, web_search):
     
         final_prompt = f"{system_llava}\n{prompt}"
         
-        inputs = processor(prompt, image, return_tensors="pt").to("cuda", torch.float16)
+        inputs = processor(final_prompt, image, return_tensors="pt").to("cuda", torch.float16)
         streamer = TextIteratorStreamer(processor, skip_prompt=True, **{"skip_special_tokens": True})
         generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
         generated_text = ""
