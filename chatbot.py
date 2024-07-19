@@ -243,12 +243,12 @@ def model_inference( user_prompt, chat_history, web_search):
                     yield output
     else:
         message = user_prompt
-        if len(message.files) == 1:
-            image = [message.files[0].path]
-        elif len(message.files) > 1:
-            image = [msg.path for msg in message.files]
+        if len(message.["files"]) == 1:
+            image = [message.["files"][0].path]
+        elif len(message.["files"]) > 1:
+            image = [msg.path for msg in message.["files"]]
     
-        txt = message.text
+        txt = message.["text"]
     
         video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
         image_extensions = Image.registered_extensions()
@@ -259,10 +259,10 @@ def model_inference( user_prompt, chat_history, web_search):
                 image = sample_frames(image)
                 print(len(image))
                 image_tokens = "<image>" * int(len(image))
-                prompt = f"<|im_start|>user {image_tokens}\n{message.text}<|im_end|><|im_start|>assistant"
+                prompt = f"<|im_start|>user {image_tokens}\n{user_prompt}<|im_end|><|im_start|>assistant"
             elif image.endswith(image_extensions):
                 image = Image.open(image).convert("RGB")
-                prompt = f"<|im_start|>user <image>\n{message.text}<|im_end|><|im_start|>assistant"
+                prompt = f"<|im_start|>user <image>\n{user_prompt}<|im_end|><|im_start|>assistant"
 
         elif len(image) > 1:
             image_list = []
@@ -278,7 +278,7 @@ def model_inference( user_prompt, chat_history, web_search):
                         image_list.append(frame)
 
             toks = "<image>" * len(image_list)
-            prompt = f"<|im_start|>user {toks}\n{message.text}<|im_end|><|im_start|>assistant"
+            prompt = f"<|im_start|>user {toks}\n{user_prompt}<|im_end|><|im_start|>assistant"
             image = image_list
 
         prompt = f"<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way.<|im_end|>\n{prompt}"
