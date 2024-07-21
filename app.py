@@ -63,7 +63,7 @@ with gr.Blocks() as video:
 
 # Main application block
 with gr.Blocks(theme=theme, title="OpenGPT 4o DEMO") as demo:
-    gr.Markdown("# OpenGPT 4o")
+    gr.Markdown("# OpenGPT 4o\n### Try its small,fast and unlimited version from here: [OpenGPT 4o Mini](https://huggingface.co/spaces/KingNish/OpenGPT-4o-mini)")
     gr.TabbedInterface([chat, voice, livechat, image, video], ['💬 SuperChat','🗣️ Voice Chat','📸 Live Chat', '🖼️ Image Engine', '🎥 Video Engine'])
 
 demo.queue(max_size=300)
