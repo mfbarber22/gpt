@@ -111,12 +111,6 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "What is formed by the deposition of the weathered remains of other rocks?",
-            "files": [f"{examples_path}/example_images/ai2d_example.jpeg"],
-        }
-    ],
-    [
-        {
             "text": "What's unusual about this image?",
             "files": [f"{examples_path}/example_images/dragons_playing.png"],
         }
