@@ -84,12 +84,12 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "Create image of a Beauiful white colour supercar.",
+            "text": "Create a Beautiful Picture of Effiel at Night.",
         }
     ],
     [
         {
-            "text": "Create image of cute happy robot.",
+            "text": "Create image of cute cat.",
         }
     ],
     [
