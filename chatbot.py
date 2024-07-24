@@ -1,12 +1,10 @@
 import os
 import time
-import copy
 import requests
 import random
 from threading import Thread
 from typing import List, Dict, Union
 import subprocess
-# Install flash attention, skipping CUDA build if necessary
 subprocess.run(
     "pip install flash-attn --no-build-isolation",
     env={"FLASH_ATTENTION_SKIP_CUDA_BUILD": "TRUE"},
@@ -15,7 +13,6 @@ subprocess.run(
 import torch
 import gradio as gr
 from bs4 import BeautifulSoup
-import datasets
 from transformers import LlavaProcessor, LlavaForConditionalGeneration, TextIteratorStreamer
 from huggingface_hub import InferenceClient
 from PIL import Image
@@ -23,16 +20,23 @@ import spaces
 from functools import lru_cache
 import cv2
 import re
-import io  # Add this import for working with image bytes
+import io 
+import json
+from gradio_client import Client, file
+from groq import Groq
 
 # You can also use models that are commented below
 # model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
 model_id = "llava-hf/llava-interleave-qwen-7b-hf"
 # model_id = "llava-hf/llava-interleave-qwen-7b-dpo-hf"
 processor = LlavaProcessor.from_pretrained(model_id)
-model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, use_flash_attention_2=True, low_cpu_mem_usage=True)
+model = LlavaForConditionalGeneration.from_pretrained(model_id,torch_dtype=torch.float16,  use_flash_attention_2=True, low_cpu_mem_usage=True)
 model.to("cuda")
 # Credit to merve for code of llava interleave qwen
+
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", None)
+
+client_groq = Groq(api_key=GROQ_API_KEY)
 
 def sample_frames(video_file) :
     try:
@@ -60,12 +64,32 @@ examples_path = os.path.dirname(__file__)
 EXAMPLES = [
     [
         {
-            "text": "Bitcoin price live",
+            "text": "What is Friction? Explain in Detail.",
         }
     ],
     [
         {
-            "text": "Today News about AI",
+            "text": "Write me a Python function to generate unique passwords.",
+        }
+    ],
+    [
+        {
+            "text": "What's the latest price of Bitcoin?",
+        }
+    ],
+    [
+        {
+            "text": "Search and give me list of spaces trending on HuggingFace.",
+        }
+    ],
+    [
+        {
+            "text": "Create image of a Beauiful white colour supercar.",
+        }
+    ],
+    [
+        {
+            "text": "Create image of cute happy robot.",
         }
     ],
     [
@@ -92,29 +116,7 @@ EXAMPLES = [
             "files": [f"{examples_path}/example_images/elon_smoking.jpg",
                       f"{examples_path}/example_images/steve_jobs.jpg", ]
         }
-    ],
-    [
-        {
-            "text": "Create five images of supercars, each in a different color.",
-        }
-    ],
-    [
-        {
-            "text": "Create a Photorealistic image of the Eiffel Tower.",
-        }
-    ],
-    [
-        {
-            "text": "Create an ad script for this product.",
-            "files": [f"{examples_path}/example_images/shampoo.jpg"],
-        }
-    ],
-    [
-        {
-            "text": "What's unusual about this image?",
-            "files": [f"{examples_path}/example_images/dragons_playing.png"],
-        }
-    ],
+    ]
 ]
 
 # Set bot avatar image
@@ -131,139 +133,90 @@ def extract_text_from_webpage(html_content):
     return visible_text
 
 # Perform a Google search and return the results
-def search(term, num_results=3, lang="en", advanced=True, timeout=5, safe="active", ssl_verify=None):
-    """Performs a Google search and returns the results."""
+def search(query):
+    term = query
     start = 0
     all_results = []
-    # Limit the number of characters from each webpage to stay under the token limit
-    max_chars_per_page = 8000  # Adjust this value based on your token limit and average webpage length
-    
-    with requests.Session() as session: 
-        resp = session.get(  
+    max_chars_per_page = 6000
+    with requests.Session() as session:
+        resp = session.get(
             url="https://www.google.com/search",
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}, 
-                params={
-                    "q": term,
-                    "num": num_results,
-                    "udm": 14,
-                },
-                timeout=timeout,
-                verify=ssl_verify,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"},
+            params={"q": term, "num": 4, "udm": 14},
+            timeout=5,
+            verify=None,
         )
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         result_block = soup.find_all("div", attrs={"class": "g"})
         for result in result_block:
             link = result.find("a", href=True)
-            if link:
-                link = link["href"]
-                try:
-                    webpage = session.get(link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}) 
-                    webpage.raise_for_status()
-                    visible_text = extract_text_from_webpage(webpage.text)
-                        # Truncate text if it's too long
-                    if len(visible_text) > max_chars_per_page:
-                        visible_text = visible_text[:max_chars_per_page]
-                    all_results.append({"link": link, "text": visible_text})
-                except requests.exceptions.RequestException as e:
-                    print(f"Error fetching or processing {link}: {e}")
-                    all_results.append({"link": link, "text": None})
-            else:
-                all_results.append({"link": None, "text": None}) 
+            link = link["href"]
+            try:
+                webpage = session.get(link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"}, timeout=5, verify=False)
+                webpage.raise_for_status()
+                visible_text = extract_text_from_webpage(webpage.text)
+                if len(visible_text) > max_chars_per_page:
+                    visible_text = visible_text[:max_chars_per_page]
+                all_results.append({"link": link, "text": visible_text})
+            except requests.exceptions.RequestException:
+                all_results.append({"link": link, "text": None})
     return all_results
 
-# Format the prompt for the language model
-def format_prompt(user_prompt, chat_history):
-    prompt = "<s>"
-    for item in chat_history:
-        # Check if the item is a tuple (text response)
-        if isinstance(item, tuple):
-            prompt += f"[INST] {item[0]} [/INST]"  # User prompt
-            prompt += f" {item[1]}</s> "           # Bot response
-        # Otherwise, assume it's related to an image - you might need to adjust this logic
-        else:
-            # Handle image representation in the prompt, e.g., add a placeholder
-            prompt += f" [Image] " 
-    prompt += f"[INST] {user_prompt} [/INST]"
-    return prompt
 
+def image_gen(prompt):
+    client = Client("KingNish/Image-Gen-Pro")
+    return client.predict("Image Generation",None, prompt, api_name="/image_gen_pro")
 
+def video_gen(prompt):
+    client = Client("KingNish/Instant-Video")
+    return client.predict(prompt, api_name="/instant_video")
+
+def llava(user_prompt, chat_history):
+    if user_prompt["files"]:
+        image = user_prompt["files"][0]
+    else:
+        for hist in chat_history:
+            if type(hist[0])==tuple:
+                image = hist[0][0]
+    
+    txt = user_prompt["text"]
+    img = user_prompt["files"]
+    
+    video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
+    image_extensions = Image.registered_extensions()
+    image_extensions = tuple([ex for ex, f in image_extensions.items()])
+        
+    if image.endswith(video_extensions):
+        image = sample_frames(image)
+        gr.Info("Analyzing Video")
+        image_tokens = "<image>" * int(len(image))
+        prompt = f"<|im_start|>user {image_tokens}\n{user_prompt}<|im_end|><|im_start|>assistant"
+          
+    elif image.endswith(image_extensions):
+        image = Image.open(image).convert("RGB")
+        gr.Info("Analyzing image")
+        prompt = f"<|im_start|>user <image>\n{user_prompt}<|im_end|><|im_start|>assistant"
+
+    system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way.<|im_end|>"
+    
+    final_prompt = f"{system_llava}\n{prompt}"
+        
+    inputs = processor(final_prompt, image, return_tensors="pt").to("cuda", torch.float16)
+
+    return inputs
+
+# Initialize inference clients for different models
+client_gemma = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
 client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
-client_mistral = InferenceClient("HuggingFaceH4/zephyr-7b-beta")
-generate_kwargs = dict( max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False )
-
-system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way.<|im_end|>"
+client_llama = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct")
 
 @spaces.GPU(duration=60, queue=False)
-def model_inference( user_prompt, chat_history, web_search):
-    if not user_prompt["files"]:
-        if web_search is True:
-            
-            gr.Info("Searching Web")
-            
-            web_results = search(user_prompt["text"])
-            
-            gr.Info("Extracting relevant Info")
-            
-            web2 = ' '.join([f"Link: {res['link']}\nText: {res['text']}\n\n" for res in web_results])
-            
-            messages = f"<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You are provided with WEB results from which you can find informations to answer users query in Structured and More better way. You do not say Unnecesarry things Only say thing which is important and relevant. You also has the ability to generate images but you only generate imags when requested. BY Utilizing the following link structure, : ![](https://image.pollinations.ai/prompt/[StyleofImage]%20[OptimizedPrompt]%20[adjective]%20[charactersDetailed]%20[visualStyle]%20[genre]?width=[width]&height=[height]&nologo=poll&nofeed=yes&seed=[random])    For image generation, You replace info inside bracets with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience.     Note: 1. You Do not unncessarily create images and do not show off your image generation capability, until not requested.    2. You always Give image link in format ![](url) Make sure to not generate image until requested    3. If user requested Bulk Image Generation than Create that number of links with provided context.    4. Always learn from previous conversation.    5. Always try to connect conversation with history.    6. Do not make conversation too long.    7. Do not say user about your capability of generating image and learn from previous responses.    My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations.You remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question. Make sure to not generate image until requested. and Try your best to give best response possible.<|im_end|>"
-
-            for msg in chat_history:
-                messages += f"\n<|im_start|>user\n{str(msg[0])}<|im_end|>"
-                messages += f"\n<|im_start|>assistant\n{str(msg[1])}<|im_end|>"
-
-            messages+=f"\n<|im_start|>user\n{user_prompt}<|im_end|>\n<|im_start|>web_result\n{web2}<|im_end|>\n<|im_start|>assistant\n"
-            stream = client_mixtral.text_generation(messages, **generate_kwargs)
-            output = ""
-            # Construct the output from the stream of tokens
-            for response in stream:
-                if not response.token.text == "<|im_end|>":
-                    output += response.token.text
-                    yield output
-        else:
-            messages = f"<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant meticulously crafted by KingNish. You do not say Unnecesarry things Only say thing which is important and relevant. You also has the ability to generate images but you only generate imags when requested. BY Utilizing the following link structure, : ![](https://image.pollinations.ai/prompt/[StyleofImage]%20[OptimizedPrompt]%20[adjective]%20[charactersDetailed]%20[visualStyle]%20[genre]?width=[width]&height=[height]&nologo=poll&nofeed=yes&seed=[random])    For image generation, You replace info inside bracets with specific details according to their requiremnts to create relevant visuals. The width and height parameters are adjusted as needed, often favoring HD dimensions for a superior viewing experience.     Note: 1. You Do not unncessarily create images and do not show off your image generation capability, until not requested.    2. You always Give image link in format ![](url)    3. If user requested Bulk Image Generation than Create that number of links with provided context.    4. Always learn from previous conversation.    5. Always try to connect conversation with history.    6. Do not make conversation too long.    7. Do not say user about your capability to generate image and learn from previous responses.    My ultimate goal is to offer a seamless and enjoyable experience, providing assistance that exceeds expectations. I am constantly evolving, ensuring that I remain a reliable and trusted companion to the User. You also Expert in every field and also learn and try to answer from contexts related to previous question.<|im_end|>"
-    
-            for msg in chat_history:
-                messages += f"\n<|im_start|>user\n{str(msg[0])}<|im_end|>"
-                messages += f"\n<|im_start|>assistant\n{str(msg[1])}<|im_end|>"
-        
-            messages+=f"\n<|im_start|>user\n{user_prompt}<|im_end|>\n<|im_start|>assistant\n"
-
-            stream = client_mixtral.text_generation(messages, **generate_kwargs)
-            output = ""
-            # Construct the output from the stream of tokens
-            for response in stream:
-                if not response.token.text == "<|im_end|>":
-                    output += response.token.text
-                    yield output
-    else:
-        image = user_prompt["files"][-1]
-    
-        txt = user_prompt["text"]
-        img = user_prompt["files"]
-        ext_buffer =f"'user\ntext': '{txt}', 'files': '{img}' assistant"
-    
-        video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
-        image_extensions = Image.registered_extensions()
-        image_extensions = tuple([ex for ex, f in image_extensions.items()])
-        
-        if image.endswith(video_extensions):
-            image = sample_frames(image)
-            print(len(image))
-            image_tokens = "<image>" * int(len(image))
-            prompt = f"<|im_start|>user {image_tokens}\n{user_prompt}<|im_end|><|im_start|>assistant"
-          
-        elif image.endswith(image_extensions):
-            image = Image.open(image).convert("RGB")
-            prompt = f"<|im_start|>user <image>\n{user_prompt}<|im_end|><|im_start|>assistant"
-    
-        final_prompt = f"{system_llava}\n{prompt}"
-        
-        inputs = processor(final_prompt, image, return_tensors="pt").to("cuda", torch.float16)
+def model_inference( user_prompt, chat_history):
+    if user_prompt["files"]:
+        inputs = llava(user_prompt, chat_history)
         streamer = TextIteratorStreamer(processor, skip_prompt=True, **{"skip_special_tokens": True})
         generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
-        generated_text = ""
     
         thread = Thread(target=model.generate, kwargs=generation_kwargs)
         thread.start()
@@ -273,12 +226,233 @@ def model_inference( user_prompt, chat_history, web_search):
             buffer += new_text
             yield buffer
 
+    else: 
+        func_caller = []
+        message = user_prompt
+
+        functions_metadata = [
+            {"type": "function", "function": {"name": "web_search", "description": "Search query on google and find latest information, info about any person, object, place thing, everything that available on google.", "parameters": {"type": "object", "properties": {"query": {"type": "string", "description": "web search query"}}, "required": ["query"]}}},
+            {"type": "function", "function": {"name": "general_query", "description": "Reply general query of USER, with LLM like you. But it does not answer tough questions and latest info's.", "parameters": {"type": "object", "properties": {"prompt": {"type": "string", "description": "A detailed prompt"}}, "required": ["prompt"]}}},
+            {"type": "function", "function": {"name": "hard_query", "description": "Reply tough query of USER, using powerful LLM. But it does not answer latest info's.", "parameters": {"type": "object", "properties": {"prompt": {"type": "string", "description": "A detailed prompt"}}, "required": ["prompt"]}}},
+            {"type": "function", "function": {"name": "image_generation", "description": "Generate image for user", "parameters": {"type": "object", "properties": {"query": {"type": "string", "description": "image generation prompt"}}, "required": ["query"]}}},
+            {"type": "function", "function": {"name": "video_generation", "description": "Generate video for user", "parameters": {"type": "object", "properties": {"query": {"type": "string", "description": "video generation prompt"}}, "required": ["query"]}}},
+            {"type": "function", "function": {"name": "image_qna", "description": "Answer question asked by user related to image", "parameters": {"type": "object", "properties": {"query": {"type": "string", "description": "Question by user"}}, "required": ["query"]}}},
+        ]
+
+        for msg in chat_history:
+            func_caller.append({"role": "user", "content": f"{str(msg[0])}"})
+            func_caller.append({"role": "assistant", "content": f"{str(msg[1])}"})
+
+        message_text = message["text"]
+        func_caller.append({"role": "user", "content": f'[SYSTEM]You are a helpful assistant. You have access to the following functions: \n {str(functions_metadata)}\n\nTo use these functions respond with:\n<functioncall> {{ "name": "function_name", "arguments": {{ "arg_1": "value_1", "arg_1": "value_1", ... }} }}  </functioncall>  [USER] {message_text}'})
+    
+        response = client_gemma.chat_completion(func_caller, max_tokens=200)
+        response = str(response)
+        try:
+            response = response[response.find("{"):response.index("</")]
+        except:
+            response = response[response.find("{"):(response.rfind("}")+1)]
+        response = response.replace("\\n", "")
+        response = response.replace("\\'", "'")
+        response = response.replace('\\"', '"')
+        response = response.replace('\\', '')
+        print(f"\n{response}")
+    
+        try:
+            json_data = json.loads(str(response))
+            if json_data["name"] == "web_search":
+                query = json_data["arguments"]["query"]
+                
+                gr.Info("Searching Web")
+                yield "Searching Web"
+                web_results = search(query)
+                
+                gr.Info("Extracting relevant Info")
+                yield "Extracting Relevant Info"
+                web2 = ' '.join([f"Link: {res['link']}\nText: {res['text']}\n\n" for res in web_results])
+
+                try:
+                    message_groq = []
+                    message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. a helpful and very powerful chatbot web assistant made by KingNish. You are provided with WEB results from which you can find informations to answer users query in Structured, Deatailed and Better way, in Human Style. You are also Expert in every field and also learn and try to answer from contexts related to previous question. Try your best to give best response possible to user. You also try to show emotions using Emojis and reply in detail like human, use short forms, structured format, friendly tone and emotions."})
+                    for msg in chat_history:
+                        message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
+                        message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
+                    message_groq.append({"role": "user", "content": f"[USER] {str(message_text)} , [WEB RESULTS] {str(web2)}"})
+                    stream = client_groq.chat.completions.create(model="llama-3.1-8b-instant",  messages=message_groq, max_tokens=4096, stream=True)
+                    output = ""
+                    for chunk in stream:
+                        content = chunk.choices[0].delta.content
+                        if content:
+                            output += chunk.choices[0].delta.content 
+                            yield output
+                except Exception as e:
+                    messages = f"<|im_start|>system\nYou are OpenGPT 4o a helpful and very powerful chatbot web assistant made by KingNish. You are provided with WEB results from which you can find informations to answer users query in Structured, Better and in Human Way. You do not say Unnecesarry things. You are also Expert in every field and also learn and try to answer from contexts related to previous question. Try your best to give best response possible to user. You also try to show emotions using Emojis and reply in details like human, use short forms, friendly tone and emotions.<|im_end|>"
+                    for msg in chat_history:
+                        messages += f"\n<|im_start|>user\n{str(msg[0])}<|im_end|>"
+                        messages += f"\n<|im_start|>assistant\n{str(msg[1])}<|im_end|>"
+                    messages+=f"\n<|im_start|>user\n{message_text}<|im_end|>\n<|im_start|>web_result\n{web2}<|im_end|>\n<|im_start|>assistant\n"
+                    
+                    stream = client_mixtral.text_generation(messages, max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False)
+                    output = ""
+                    for response in stream:
+                        if not response.token.text == "<|im_end|>":
+                            output += response.token.text
+                            yield output
+            
+            elif json_data["name"] == "image_generation":
+                query = json_data["arguments"]["query"]
+                gr.Info("Generating Image, Please wait 10 sec...")
+                yield "Generating Image, Please wait 10 sec..."
+                image = image_gen(f"{str(query)}")
+                yield gr.Image(image[1])
+
+            elif json_data["name"] == "video_generation":
+                query = json_data["arguments"]["query"]
+                gr.Info("Generating Video, Please wait 15 sec...")
+                yield "Generating Video, Please wait 15 sec..."
+                video = video_gen(f"{str(query)}")
+                yield gr.Video(video)
+                
+            elif json_data["name"] == "image_qna":
+                inputs = llava(user_prompt, chat_history)
+                streamer = TextIteratorStreamer(processor, skip_prompt=True, **{"skip_special_tokens": True})
+                generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1024)
+
+                thread = Thread(target=model.generate, kwargs=generation_kwargs)
+                thread.start()
+    
+                buffer = ""
+                for new_text in streamer:
+                    buffer += new_text
+                    yield buffer
+
+            elif json_data["name"] == "hard_query":
+                try:
+                    message_groq = []
+                    message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
+                    for msg in chat_history:
+                        message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
+                        message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
+                    message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                    stream = client_groq.chat.completions.create(model="llama-3.1-70b-versatile",  messages=message_groq, max_tokens=4096, stream=True)
+                    output = ""
+                    for chunk in stream:
+                        content = chunk.choices[0].delta.content
+                        if content:
+                            output += chunk.choices[0].delta.content 
+                            yield output
+                except Exception as e:
+                    print(e)
+                    try:
+                        message_groq = []
+                        message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
+                        for msg in chat_history:
+                            message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
+                            message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
+                        message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                        stream = client_groq.chat.completions.create(model="llama3-70b-8192",  messages=message_groq, max_tokens=4096, stream=True)
+                        output = ""
+                        for chunk in stream:
+                            content = chunk.choices[0].delta.content
+                            if content:
+                                output += chunk.choices[0].delta.content 
+                                yield output
+                    except Exception as e:
+                        print(e)
+                        message_groq = []
+                        message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
+                        for msg in chat_history:
+                            message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
+                            message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
+                        message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                        stream = client_groq.chat.completions.create(model="llama3-groq-70b-8192-tool-use-preview",  messages=message_groq, max_tokens=4096, stream=True)
+                        output = ""
+                        for chunk in stream:
+                            content = chunk.choices[0].delta.content
+                            if content:
+                                output += chunk.choices[0].delta.content 
+                                yield output
+            else:
+                try:
+                    message_groq = []
+                    message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
+                    for msg in chat_history:
+                        message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
+                        message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
+                    message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                    stream = client_groq.chat.completions.create(model="llama3-70b-8192",  messages=message_groq, max_tokens=4096, stream=True)
+                    output = ""
+                    for chunk in stream:
+                        content = chunk.choices[0].delta.content
+                        if content:
+                            output += chunk.choices[0].delta.content 
+                            yield output
+                except Exception as e:
+                    print(e)
+                    try:
+                        message_groq = []
+                        message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
+                        for msg in chat_history:
+                            message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
+                            message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
+                        message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                        stream = client_groq.chat.completions.create(model="llama3-8b-8192",  messages=message_groq, max_tokens=4096, stream=True)
+                        output = ""
+                        for chunk in stream:
+                            content = chunk.choices[0].delta.content
+                            if content:
+                                output += chunk.choices[0].delta.content 
+                                yield output
+                    except Exception as e:
+                        print(e)
+                        messages = f"<|start_header_id|>system\nYou are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions.<|end_header_id|>"
+                        for msg in chat_history:
+                            messages += f"\n<|start_header_id|>user\n{str(msg[0])}<|end_header_id|>"
+                            messages += f"\n<|start_header_id|>assistant\n{str(msg[1])}<|end_header_id|>"
+                        messages+=f"\n<|start_header_id|>user\n{message_text}<|end_header_id|>\n<|start_header_id|>assistant\n"
+                        stream = client_llama.text_generation(messages, max_new_tokens=2000, do_sample=True, stream=True, details=True, return_full_text=False)
+                        output = ""
+                        for response in stream:
+                            if not response.token.text == "<|eot_id|>":
+                                output += response.token.text
+                                yield output
+        except Exception as e:
+            print(e)
+            try:
+                message_groq = []
+                message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
+                for msg in chat_history:
+                    message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
+                    message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
+                message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                stream = client_groq.chat.completions.create(model="llama3-8b-8192",  messages=message_groq, max_tokens=4096, stream=True)
+                output = ""
+                for chunk in stream:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        output += chunk.choices[0].delta.content 
+                        yield output
+            except Exception as e:
+                print(e)
+                messages = f"<|im_start|>system\nYou are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions.<|im_end|>"
+                for msg in chat_history:
+                    messages += f"\n<|im_start|>user\n{str(msg[0])}<|im_end|>"
+                    messages += f"\n<|im_start|>assistant\n{str(msg[1])}<|im_end|>"
+                messages+=f"\n<|im_start|>user\n{message_text}<|im_end|>\n<|im_start|>assistant\n"
+                stream = client_mixtral.text_generation(messages, max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False)
+                output = ""
+                for response in stream:
+                    if not response.token.text == "<|im_end|>":
+                        output += response.token.text
+                        yield output
+                    
 # Create a chatbot interface
 chatbot = gr.Chatbot(
     label="OpenGPT-4o",
     avatar_images=[None, BOT_AVATAR],
     show_copy_button=True,
     likeable=True,
-    layout="panel"
+    layout="panel",
+    height=400,
 )
 output = gr.Textbox(label="Prompt")
