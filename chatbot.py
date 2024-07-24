@@ -278,6 +278,7 @@ def model_inference( user_prompt, chat_history):
                         message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
                         message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
                     message_groq.append({"role": "user", "content": f"[USER] {str(message_text)} , [WEB RESULTS] {str(web2)}"})
+                    # its meta-llama/Meta-Llama-3.1-8B-Instruct
                     stream = client_groq.chat.completions.create(model="llama-3.1-8b-instant",  messages=message_groq, max_tokens=4096, stream=True)
                     output = ""
                     for chunk in stream:
@@ -334,6 +335,7 @@ def model_inference( user_prompt, chat_history):
                         message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
                         message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
                     message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                    # its meta-llama/Meta-Llama-3.1-70B-Instruct
                     stream = client_groq.chat.completions.create(model="llama-3.1-70b-versatile",  messages=message_groq, max_tokens=4096, stream=True)
                     output = ""
                     for chunk in stream:
@@ -350,6 +352,7 @@ def model_inference( user_prompt, chat_history):
                             message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
                             message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
                         message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                        # its meta-llama/Meta-Llama-3-70B-Instruct
                         stream = client_groq.chat.completions.create(model="llama3-70b-8192",  messages=message_groq, max_tokens=4096, stream=True)
                         output = ""
                         for chunk in stream:
@@ -380,6 +383,7 @@ def model_inference( user_prompt, chat_history):
                         message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
                         message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
                     message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                    # its meta-llama/Meta-Llama-3-70B-Instruct
                     stream = client_groq.chat.completions.create(model="llama3-70b-8192",  messages=message_groq, max_tokens=4096, stream=True)
                     output = ""
                     for chunk in stream:
@@ -396,6 +400,7 @@ def model_inference( user_prompt, chat_history):
                             message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
                             message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
                         message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                        # its meta-llama/Meta-Llama-3-8B-Instruct
                         stream = client_groq.chat.completions.create(model="llama3-8b-8192",  messages=message_groq, max_tokens=4096, stream=True)
                         output = ""
                         for chunk in stream:
@@ -425,6 +430,7 @@ def model_inference( user_prompt, chat_history):
                     message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
                     message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
                 message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                # its meta-llama/Meta-Llama-3-8B-Instruct
                 stream = client_groq.chat.completions.create(model="llama3-8b-8192",  messages=message_groq, max_tokens=4096, stream=True)
                 output = ""
                 for chunk in stream:
