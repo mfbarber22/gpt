@@ -430,8 +430,8 @@ def model_inference( user_prompt, chat_history):
                     message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
                     message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
                 message_groq.append({"role": "user", "content": f"{str(message_text)}"})
-                # its meta-llama/Meta-Llama-3-8B-Instruct
-                stream = client_groq.chat.completions.create(model="llama3-8b-8192",  messages=message_groq, max_tokens=4096, stream=True)
+                # its meta-llama/Meta-Llama-3-70B-Instruct
+                stream = client_groq.chat.completions.create(model="llama3-70b-8192",  messages=message_groq, max_tokens=4096, stream=True)
                 output = ""
                 for chunk in stream:
                     content = chunk.choices[0].delta.content
@@ -440,17 +440,34 @@ def model_inference( user_prompt, chat_history):
                         yield output
             except Exception as e:
                 print(e)
-                messages = f"<|im_start|>system\nYou are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions.<|im_end|>"
-                for msg in chat_history:
-                    messages += f"\n<|im_start|>user\n{str(msg[0])}<|im_end|>"
-                    messages += f"\n<|im_start|>assistant\n{str(msg[1])}<|im_end|>"
-                messages+=f"\n<|im_start|>user\n{message_text}<|im_end|>\n<|im_start|>assistant\n"
-                stream = client_mixtral.text_generation(messages, max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False)
-                output = ""
-                for response in stream:
-                    if not response.token.text == "<|im_end|>":
-                        output += response.token.text
-                        yield output
+                try:
+                    message_groq = []
+                    message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
+                    for msg in chat_history:
+                        message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
+                        message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
+                    message_groq.append({"role": "user", "content": f"{str(message_text)}"})
+                    # its meta-llama/Meta-Llama-3-8B-Instruct
+                    stream = client_groq.chat.completions.create(model="llama3-8b-8192",  messages=message_groq, max_tokens=4096, stream=True)
+                    output = ""
+                    for chunk in stream:
+                        content = chunk.choices[0].delta.content
+                        if content:
+                            output += chunk.choices[0].delta.content 
+                            yield output
+                except Exception as e:
+                    print(e)
+                    messages = f"<|im_start|>system\nYou are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions.<|im_end|>"
+                    for msg in chat_history:
+                        messages += f"\n<|im_start|>user\n{str(msg[0])}<|im_end|>"
+                        messages += f"\n<|im_start|>assistant\n{str(msg[1])}<|im_end|>"
+                    messages+=f"\n<|im_start|>user\n{message_text}<|im_end|>\n<|im_start|>assistant\n"
+                    stream = client_mixtral.text_generation(messages, max_new_tokens=4000, do_sample=True, stream=True, details=True, return_full_text=False)
+                    output = ""
+                    for response in stream:
+                        if not response.token.text == "<|im_end|>":
+                            output += response.token.text
+                            yield output
                     
 # Create a chatbot interface
 chatbot = gr.Chatbot(
