@@ -263,7 +263,7 @@ def model_inference( user_prompt, chat_history):
             json_data = json.loads(str(response))
             if json_data["name"] == "web_search":
                 query = json_data["arguments"]["query"]
-         client_mistral_nemo       
+
                 gr.Info("Searching Web")
                 yield "Searching Web"
                 web_results = search(query)
