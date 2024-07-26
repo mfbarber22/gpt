@@ -210,6 +210,7 @@ def llava(user_prompt, chat_history):
 client_gemma = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
 client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
 client_llama = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct")
+client_mistral_nemo = InferenceClient("mistralai/Mistral-Nemo-Instruct-2407")
 
 @spaces.GPU(duration=60, queue=False)
 def model_inference( user_prompt, chat_history):
@@ -246,7 +247,7 @@ def model_inference( user_prompt, chat_history):
         message_text = message["text"]
         func_caller.append({"role": "user", "content": f'[SYSTEM]You are a helpful assistant. You have access to the following functions: \n {str(functions_metadata)}\n\nTo use these functions respond with:\n<functioncall> {{ "name": "function_name", "arguments": {{ "arg_1": "value_1", "arg_1": "value_1", ... }} }}  </functioncall>  [USER] {message_text}'})
     
-        response = client_gemma.chat_completion(func_caller, max_tokens=200)
+        response = client_mistral_nemo.chat_completion(func_caller, max_tokens=200)
         response = str(response)
         try:
             response = response[response.find("{"):response.index("</")]
@@ -262,7 +263,7 @@ def model_inference( user_prompt, chat_history):
             json_data = json.loads(str(response))
             if json_data["name"] == "web_search":
                 query = json_data["arguments"]["query"]
-                
+         client_mistral_nemo       
                 gr.Info("Searching Web")
                 yield "Searching Web"
                 web_results = search(query)
