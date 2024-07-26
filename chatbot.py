@@ -305,8 +305,15 @@ def model_inference( user_prompt, chat_history):
                 query = json_data["arguments"]["query"]
                 gr.Info("Generating Image, Please wait 10 sec...")
                 yield "Generating Image, Please wait 10 sec..."
-                image = image_gen(f"{str(query)}")
-                yield gr.Image(image[1])
+                try:
+                    image = image_gen(f"{str(query)}")
+                    yield gr.Image(image[1])
+                except:
+                    client_sd3 = InferenceClient("stabilityai/stable-diffusion-3-medium-diffusers")
+                    seed = random.randint(0,999999)
+                    image = client_sd3.text_to_image(query, negative_prompt=f"{seed}")
+                    yield gr.Image(image)
+                    
 
             elif json_data["name"] == "video_generation":
                 query = json_data["arguments"]["query"]
