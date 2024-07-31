@@ -32,11 +32,7 @@ with gr.Blocks(
 
 # Voice chat block
 with gr.Blocks() as voice:
-    gr.Markdown("Sometimes, it takes because of long queue")
-    with gr.Row():
-        audio_input = gr.Audio(label="Voice Chat (BETA)", sources="microphone", type="filepath", waveform_options=False)
-        output = gr.Audio(label="OUTPUT", type="filepath", interactive=False, autoplay=True, elem_classes="audio")
-    audio_input.change( fn=respond, inputs=[audio_input], outputs=[output], queue=False)
+    gr.Markdown("Work in Progress")
 
 with gr.Blocks() as image:
     gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
