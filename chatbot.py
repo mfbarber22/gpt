@@ -274,11 +274,11 @@ def model_inference( user_prompt, chat_history):
 
                 try:
                     message_groq = []
-                    message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. a helpful and very powerful chatbot web assistant made by KingNish. You are provided with WEB results from which you can find informations to answer users query in Structured, Deatailed and Better way, in Human Style. You are also Expert in every field and also learn and try to answer from contexts related to previous question. Try your best to give best response possible to user. You also try to show emotions using Emojis and reply in detail like human, use short forms, structured format, friendly tone and emotions."})
+                    message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and very powerful web assistant made by KingNish. You are provided with WEB results from which you can find informations to answer users query in Structured, Detailed and Better way, in Human Style. You are also Expert in every field and also learn and try to answer from contexts related to previous question. Try your best to give best response possible to user. You reply in detail like human, use short forms, structured format, friendly tone and emotions."})
                     for msg in chat_history:
                         message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
                         message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
-                    message_groq.append({"role": "user", "content": f"[USER] {str(message_text)} , [WEB RESULTS] {str(web2)}"})
+                    message_groq.append({"role": "user", "content": f"[USER] {str(message_text)} ,  [WEB RESULTS] {str(web2)}"})
                     # its meta-llama/Meta-Llama-3.1-8B-Instruct
                     stream = client_groq.chat.completions.create(model="llama-3.1-8b-instant",  messages=message_groq, max_tokens=4096, stream=True)
                     output = ""
@@ -335,7 +335,7 @@ def model_inference( user_prompt, chat_history):
                     buffer += new_text
                     yield buffer
 
-            elif json_data["name"] == "hard_query":
+            else:
                 try:
                     message_groq = []
                     message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
@@ -382,52 +382,6 @@ def model_inference( user_prompt, chat_history):
                             content = chunk.choices[0].delta.content
                             if content:
                                 output += chunk.choices[0].delta.content 
-                                yield output
-            else:
-                try:
-                    message_groq = []
-                    message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
-                    for msg in chat_history:
-                        message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
-                        message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
-                    message_groq.append({"role": "user", "content": f"{str(message_text)}"})
-                    # its meta-llama/Meta-Llama-3-70B-Instruct
-                    stream = client_groq.chat.completions.create(model="llama3-70b-8192",  messages=message_groq, max_tokens=4096, stream=True)
-                    output = ""
-                    for chunk in stream:
-                        content = chunk.choices[0].delta.content
-                        if content:
-                            output += chunk.choices[0].delta.content 
-                            yield output
-                except Exception as e:
-                    print(e)
-                    try:
-                        message_groq = []
-                        message_groq.append({"role":"system", "content": "You are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions."})
-                        for msg in chat_history:
-                            message_groq.append({"role": "user", "content": f"{str(msg[0])}"})
-                            message_groq.append({"role": "assistant", "content": f"{str(msg[1])}"})
-                        message_groq.append({"role": "user", "content": f"{str(message_text)}"})
-                        # its meta-llama/Meta-Llama-3-8B-Instruct
-                        stream = client_groq.chat.completions.create(model="llama3-8b-8192",  messages=message_groq, max_tokens=4096, stream=True)
-                        output = ""
-                        for chunk in stream:
-                            content = chunk.choices[0].delta.content
-                            if content:
-                                output += chunk.choices[0].delta.content 
-                                yield output
-                    except Exception as e:
-                        print(e)
-                        messages = f"<|start_header_id|>system\nYou are OpenGPT 4o a helpful and powerful assistant made by KingNish. You answers users query in detail and structured format and style like human. You are also Expert in every field and also learn and try to answer from contexts related to previous question. You also try to show emotions using Emojis and reply like human, use short forms, structured manner, detailed explaination, friendly tone and emotions.<|end_header_id|>"
-                        for msg in chat_history:
-                            messages += f"\n<|start_header_id|>user\n{str(msg[0])}<|end_header_id|>"
-                            messages += f"\n<|start_header_id|>assistant\n{str(msg[1])}<|end_header_id|>"
-                        messages+=f"\n<|start_header_id|>user\n{message_text}<|end_header_id|>\n<|start_header_id|>assistant\n"
-                        stream = client_llama.text_generation(messages, max_new_tokens=2000, do_sample=True, stream=True, details=True, return_full_text=False)
-                        output = ""
-                        for response in stream:
-                            if not response.token.text == "<|eot_id|>":
-                                output += response.token.text
                                 yield output
         except Exception as e:
             print(e)
