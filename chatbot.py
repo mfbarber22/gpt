@@ -245,7 +245,7 @@ def model_inference( user_prompt, chat_history):
             func_caller.append({"role": "assistant", "content": f"{str(msg[1])}"})
 
         message_text = message["text"]
-        func_caller.append({"role": "user", "content": f'[SYSTEM]You are a helpful assistant. You have access to the following functions: \n {str(functions_metadata)}\n\nTo use these functions respond with:\n<functioncall> {{ "name": "function_name", "arguments": {{ "arg_1": "value_1", "arg_1": "value_1", ... }} }}  </functioncall>  [USER] {message_text}'})
+        func_caller.append({"role": "user", "content": f'[SYSTEM]You are a helpful assistant. You have access to the following functions: \n {str(functions_metadata)}\n\nTo use these functions respond with:\n<functioncall> {{ "name": "function_name", "arguments": {{ "arg_1": "value_1", "arg_1": "value_1", ... }} }}  </functioncall> , Reply in JSOn format, you can call only one function at a time, So, choose functions wisely. [USER] {message_text}'})
     
         response = client_mistral.chat_completion(func_caller, max_tokens=200)
         response = str(response)
