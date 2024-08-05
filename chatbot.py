@@ -137,7 +137,7 @@ def search(query):
     term = query
     start = 0
     all_results = []
-    max_chars_per_page = 6000
+    max_chars_per_page = 8000
     with requests.Session() as session:
         resp = session.get(
             url="https://www.google.com/search",
