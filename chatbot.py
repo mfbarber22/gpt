@@ -207,7 +207,7 @@ def llava(user_prompt, chat_history):
     return inputs
 
 # Initialize inference clients for different models
-client_mistral = InferenceClient("mistralai/Mistral-7B-Instruct-v0.2")
+client_mistral = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
 client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
 client_llama = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct")
 client_mistral_nemo = InferenceClient("mistralai/Mistral-Nemo-Instruct-2407")
