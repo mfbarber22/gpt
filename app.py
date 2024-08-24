@@ -32,7 +32,7 @@ with gr.Blocks(
 
 # Voice chat block
 with gr.Blocks() as voice:
-    gr.Markdown("Work in Progress")
+    gr.HTML("<iframe src='https://kingnish-voicee.hf.space' width='100%' height='1000px' style='border-radius: 8px;'></iframe>")
 
 with gr.Blocks() as image:
     gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
