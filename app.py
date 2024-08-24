@@ -31,7 +31,8 @@ with gr.Blocks(
 
 # Voice chat block
 with gr.Blocks() as voice:
-    gr.HTML("<iframe src='https://kingnish-voicee.hf.space' width='100%' height='1000px' style='border-radius: 8px;'></iframe>")
+    gr.Markdown("# Try Voice Chatfrom Below Link:")
+    gr.HTML("<a href='https://huggingface.co/spaces/KingNish/Voicee'>https://huggingface.co/spaces/KingNish/Voicee</a>")
 
 with gr.Blocks() as image:
     gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
