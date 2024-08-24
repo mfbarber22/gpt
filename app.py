@@ -1,6 +1,5 @@
 import gradio as gr
-
-# Import modules from other files
+import spaces
 from chatbot import model_inference, EXAMPLES, chatbot
 from voice_chat import respond
 
