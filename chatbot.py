@@ -19,7 +19,6 @@ from huggingface_hub import InferenceClient
 from PIL import Image
 import spaces
 from functools import lru_cache
-import cv2
 import re
 import io 
 import json
@@ -27,33 +26,13 @@ from gradio_client import Client, file
 from groq import Groq
 
 # Model and Processor Loading (Done once at startup)
-MODEL_ID = "Qwen/Qwen2-VL-2B-Instruct"
+MODEL_ID = "Qwen/Qwen2-VL-7B-Instruct"
 model = Qwen2VLForConditionalGeneration.from_pretrained(MODEL_ID, trust_remote_code=True, torch_dtype=torch.float16).to("cuda").eval()
 processor = AutoProcessor.from_pretrained(MODEL_ID, trust_remote_code=True)
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", None)
 
 client_groq = Groq(api_key=GROQ_API_KEY)
-
-def sample_frames(video_file) :
-    try:
-        video = cv2.VideoCapture(video_file)
-        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-        num_frames = 12
-        interval = total_frames // num_frames
-        frames = []
-        for i in range(total_frames):
-            ret, frame = video.read()
-            pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            if not ret:
-                continue
-            if i % interval == 0:
-                frames.append(pil_img)
-        video.release()
-        return frames
-    except:
-        frames=[]
-        return frames
         
 
 # Path to example images
@@ -109,7 +88,7 @@ EXAMPLES = [
     ],
     [
         {
-            "text": "Who are they? Tell me about both of them",
+            "text": "Who are they? Tell me about both of them.",
             "files": [f"{examples_path}/example_images/elon_smoking.jpg",
                       f"{examples_path}/example_images/steve_jobs.jpg", ]
         }
@@ -333,9 +312,9 @@ def model_inference( user_prompt, chat_history):
                     image = image_gen(f"{str(query)}")
                     yield gr.Image(image[1])
                 except:
-                    client_sd3 = InferenceClient("stabilityai/stable-diffusion-3-medium-diffusers")
+                    client_flux = InferenceClient("black-forest-labs/FLUX.1-schnell")
                     seed = random.randint(0,999999)
-                    image = client_sd3.text_to_image(query, negative_prompt=f"{seed}")
+                    image = client_flux.text_to_image(query, negative_prompt=f"{seed}")
                     yield gr.Image(image)
                     
 
