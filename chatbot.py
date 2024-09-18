@@ -4,16 +4,18 @@ import requests
 import random
 from threading import Thread
 from typing import List, Dict, Union
-import subprocess
-subprocess.run(
-    "pip install flash-attn --no-build-isolation",
-    env={"FLASH_ATTENTION_SKIP_CUDA_BUILD": "TRUE"},
-    shell=True,
-)
+# import subprocess
+# subprocess.run(
+#     "pip install flash-attn --no-build-isolation",
+#     env={"FLASH_ATTENTION_SKIP_CUDA_BUILD": "TRUE"},
+#     shell=True,
+# )
 import torch
 import gradio as gr
 from bs4 import BeautifulSoup
-from transformers import LlavaProcessor, LlavaForConditionalGeneration, TextIteratorStreamer
+from transformers import LlavaProcessor, LlavaForConditionalGeneration, 
+from transformers import Qwen2VLForConditionalGeneration, AutoProcessor, TextIteratorStreamer
+from qwen_vl_utils import process_vision_info
 from huggingface_hub import InferenceClient
 from PIL import Image
 import spaces
@@ -25,14 +27,10 @@ import json
 from gradio_client import Client, file
 from groq import Groq
 
-# You can also use models that are commented below
-# model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
-model_id = "llava-hf/llava-interleave-qwen-7b-hf"
-# model_id = "llava-hf/llava-interleave-qwen-7b-dpo-hf"
-processor = LlavaProcessor.from_pretrained(model_id)
-model = LlavaForConditionalGeneration.from_pretrained(model_id,torch_dtype=torch.float16,  use_flash_attention_2=True)
-model.to("cuda")
-# Credit to merve for code of llava interleave qwen
+# Model and Processor Loading (Done once at startup)
+MODEL_ID = "Qwen/Qwen2-VL-2B-Instruct"
+model = Qwen2VLForConditionalGeneration.from_pretrained(MODEL_ID, trust_remote_code=True, torch_dtype=torch.float16).to("cuda").eval()
+processor = AutoProcessor.from_pretrained(MODEL_ID, trust_remote_code=True)
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", None)
 
@@ -172,39 +170,69 @@ def video_gen(prompt):
     client = Client("KingNish/Instant-Video")
     return client.predict(prompt, api_name="/instant_video")
 
-def llava(user_prompt, chat_history):
+image_extensions = Image.registered_extensions()
+video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
+
+def qwen_inference(user_prompt, chat_history):
+    images = []
+    text_input = user_prompt["text"]
+
+    # Handle multiple image uploads
     if user_prompt["files"]:
-        image = user_prompt["files"][0]
+        images.extend(user_prompt["files"])
     else:
         for hist in chat_history:
-            if type(hist[0])==tuple:
-                image = hist[0][0]
-    
-    txt = user_prompt["text"]
-    img = user_prompt["files"]
-    
-    video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
-    image_extensions = Image.registered_extensions()
-    image_extensions = tuple([ex for ex, f in image_extensions.items()])
-        
-    if image.endswith(video_extensions):
-        image = sample_frames(image)
-        gr.Info("Analyzing Video")
-        image_tokens = "<image>" * int(len(image))
-        prompt = f"<|im_start|>user {image_tokens}\n{user_prompt}<|im_end|><|im_start|>assistant"
-          
-    elif image.endswith(image_extensions):
-        image = Image.open(image).convert("RGB")
-        gr.Info("Analyzing image")
-        prompt = f"<|im_start|>user <image>\n{user_prompt}<|im_end|><|im_start|>assistant"
+            if type(hist[0]) == tuple:
+                images.extend(hist[0]) 
 
-    system_llava = "<|im_start|>system\nYou are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way.<|im_end|>"
-    
-    final_prompt = f"{system_llava}\n{prompt}"
-        
-    inputs = processor(final_prompt, image, return_tensors="pt").to("cuda", torch.float16)
+    # System Prompt (Similar to LLaVA)
+    SYSTEM_PROMPT = "You are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way."
 
-    return inputs
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] 
+
+    for image in images:
+        if image.endswith(video_extensions):
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "video", "video": image},
+                ]
+            })
+
+        if image.endswith(tuple([i for i, f in image_extensions.items()])):
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": image},
+                ]
+            })
+
+    # Add user text input 
+    messages.append({
+        "role": "user",
+        "content": [
+            {"type": "text", "text": text_input}
+        ]
+    })
+
+    text = processor.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+    image_inputs, video_inputs = process_vision_info(messages)
+    inputs = processor(
+        text=[text],
+        images=image_inputs,
+        videos=video_inputs,
+        padding=True,
+        return_tensors="pt",
+    ).to("cuda")
+
+    streamer = TextIteratorStreamer(
+        processor, skip_prompt=True, **{"skip_special_tokens": True}
+    )
+    generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
+
+    return generation_kwargs
 
 # Initialize inference clients for different models
 client_mistral = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
@@ -215,9 +243,7 @@ client_mistral_nemo = InferenceClient("mistralai/Mistral-Nemo-Instruct-2407")
 @spaces.GPU(duration=60, queue=False)
 def model_inference( user_prompt, chat_history):
     if user_prompt["files"]:
-        inputs = llava(user_prompt, chat_history)
-        streamer = TextIteratorStreamer(processor, skip_prompt=True, **{"skip_special_tokens": True})
-        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
+        generation_kwargs = qwen_inference(user_prompt, chat_history)
     
         thread = Thread(target=model.generate, kwargs=generation_kwargs)
         thread.start()
