@@ -13,7 +13,6 @@ from typing import List, Dict, Union
 import torch
 import gradio as gr
 from bs4 import BeautifulSoup
-from transformers import LlavaProcessor, LlavaForConditionalGeneration, 
 from transformers import Qwen2VLForConditionalGeneration, AutoProcessor, TextIteratorStreamer
 from qwen_vl_utils import process_vision_info
 from huggingface_hub import InferenceClient
