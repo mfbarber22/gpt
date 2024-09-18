@@ -214,24 +214,7 @@ def qwen_inference(user_prompt, chat_history):
         ]
     })
 
-    text = processor.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-    image_inputs, video_inputs = process_vision_info(messages)
-    inputs = processor(
-        text=[text],
-        images=image_inputs,
-        videos=video_inputs,
-        padding=True,
-        return_tensors="pt",
-    ).to("cuda")
-
-    streamer = TextIteratorStreamer(
-        processor, skip_prompt=True, **{"skip_special_tokens": True}
-    )
-    generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
-
-    return generation_kwargs
+    return messages
 
 # Initialize inference clients for different models
 client_mistral = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
@@ -242,7 +225,23 @@ client_mistral_nemo = InferenceClient("mistralai/Mistral-Nemo-Instruct-2407")
 @spaces.GPU(duration=60, queue=False)
 def model_inference( user_prompt, chat_history):
     if user_prompt["files"]:
-        generation_kwargs = qwen_inference(user_prompt, chat_history)
+        messages = qwen_inference(user_prompt, chat_history)
+        text = processor.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+        image_inputs, video_inputs = process_vision_info(messages)
+        inputs = processor(
+            text=[text],
+            images=image_inputs,
+            videos=video_inputs,
+            padding=True,
+            return_tensors="pt",
+        ).to("cuda")
+        
+        streamer = TextIteratorStreamer(
+        processor, skip_prompt=True, **{"skip_special_tokens": True}
+    )
+        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
     
         thread = Thread(target=model.generate, kwargs=generation_kwargs)
         thread.start()
