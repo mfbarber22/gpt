@@ -1,6 +1,5 @@
 spaces
-transformers
-datasets
+git+https://github.com/huggingface/transformers.git
 pillow
 numpy
 torch
