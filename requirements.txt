@@ -17,3 +17,5 @@ soxr
 pydub
 groq
 opencv-python
+qwen-vl-utils
+av
