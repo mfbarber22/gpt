@@ -3,51 +3,89 @@ import spaces
 from chatbot import model_inference, EXAMPLES, chatbot
 from voice_chat import respond
 
+# Define custom CSS for better styling
+custom_css = """
+.gradio-container {
+    font-family: 'Roboto', sans-serif;
+}
+
+.main-header {
+    text-align: center;
+    color: #4a4a4a;
+    margin-bottom: 2rem;
+}
+
+.tab-header {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.custom-chatbot {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.custom-button:hover {
+    background-color: #2980b9;
+}
+"""
+
 # Define Gradio theme
 theme = gr.themes.Soft(
-    primary_hue="sky",
-    secondary_hue="violet",
-    neutral_hue="gray",
-    font=[gr.themes.GoogleFont('orbitron')]
+    primary_hue="indigo",
+    secondary_hue="blue",
+    neutral_hue="slate",
+    font=[gr.themes.GoogleFont('Roboto'), "sans-serif"]
 )
 
-
-# Create Gradio blocks for different functionalities
-
 # Chat interface block
-with gr.Blocks(
-        css=""".gradio-container .avatar-container {height: 40px width: 40px !important;} #duplicate-button {margin: auto; color: white; background: #f1a139; border-radius: 100vh; margin-top: 2px; margin-bottom: 2px;}""",
-) as chat:
-    gr.Markdown("### Image Chat, Image Generation, Image classification and Normal Chat")
+with gr.Blocks(css=custom_css) as chat:
+    gr.Markdown("### 💬 OpenGPT 4o Chat", elem_classes="tab-header")
     gr.ChatInterface(
         fn=model_inference,
-        chatbot = chatbot,
+        chatbot=chatbot,
         examples=EXAMPLES,
         multimodal=True,
         cache_examples=False,
         autofocus=False,
         concurrency_limit=10,
+        elem_classes="custom-chatbot"
     )
 
 # Voice chat block
 with gr.Blocks() as voice:
-    gr.Markdown("# Try Voice Chatfrom Below Link:")
-    gr.HTML("<a href='https://huggingface.co/spaces/KingNish/Voicee'>https://huggingface.co/spaces/KingNish/Voicee</a>")
+    gr.Markdown("### 🗣️ Voice Chat", elem_classes="tab-header")
+    gr.Markdown("Try Voice Chat from the link below:")
+    gr.HTML('<a href="https://huggingface.co/spaces/KingNish/Voicee" target="_blank" class="custom-button">Open Voice Chat</a>')
 
+# Image engine block
 with gr.Blocks() as image:
-    gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
+    gr.Markdown("### 🖼️ Image Engine", elem_classes="tab-header")
+    gr.Markdown("Image processing features coming soon!")
 
-with gr.Blocks() as instant2:
-    gr.HTML("<iframe src='https://kingnish-instant-video.hf.space' width='100%' height='3000px' style='border-radius: 8px;'></iframe>")
-
+# Video engine block
 with gr.Blocks() as video:
-    gr.Markdown("""More Models are coming""")
-    gr.TabbedInterface([ instant2], ['Instant🎥'])     
+    gr.Markdown("### 🎥 Video Engine", elem_classes="tab-header")
+    gr.Markdown("Video processing features coming soon!")
 
 # Main application block
 with gr.Blocks(theme=theme, title="OpenGPT 4o DEMO") as demo:
-    gr.Markdown("# OpenGPT 4o")
-    gr.TabbedInterface([chat, voice, image, video], ['💬 SuperChat','🗣️ Voice Chat', '🖼️ Image Engine', '🎥 Video Engine'])
+    gr.Markdown("# 🚀 OpenGPT 4o", elem_classes="main-header")
+    gr.TabbedInterface(
+        [chat, voice, image, video],
+        ['💬 SuperChat', '🗣️ Voice Chat', '🖼️ Image Engine', '🎥 Video Engine']
+    )
 
 demo.queue(max_size=300)
 demo.launch()
