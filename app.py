@@ -59,8 +59,7 @@ with gr.Blocks(css=custom_css) as chat:
         multimodal=True,
         cache_examples=False,
         autofocus=False,
-        concurrency_limit=10,
-        elem_classes="custom-chatbot"
+        concurrency_limit=10
     )
 
 # Voice chat block
