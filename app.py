@@ -68,8 +68,11 @@ with gr.Blocks() as voice:
     gr.Markdown("Try Voice Chat from the link below:")
     gr.HTML('<a href="https://huggingface.co/spaces/KingNish/Voicee" target="_blank" class="custom-button">Open Voice Chat</a>')
 
-image_gen_pro = gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
-flux_fast = gr.HTML("<iframe src='https://prodia-flux-1-dev.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
+with gr.Blocks() as image_gen_pro:
+    gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
+
+with gr.Blocks() as flux_fast:
+    gr.HTML("<iframe src='https://prodia-flux-1-dev.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
 
 # Image engine block
 with gr.Blocks() as image:
