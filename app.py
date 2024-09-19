@@ -77,7 +77,7 @@ with gr.Blocks() as flux_fast:
 # Image engine block
 with gr.Blocks() as image:
     gr.Markdown("### 🖼️ Image Engine", elem_classes="tab-header")
-    gr.TabbedInterface(['flux_fast', 'image_gen_pro'], ['High Quality Image Gen'],['Image gen and editing'])     
+    gr.TabbedInterface([flux_fast, image_gen_pro], ['High Quality Image Gen'],['Image gen and editing'])     
     
 
 # Video engine block
