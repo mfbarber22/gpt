@@ -68,15 +68,20 @@ with gr.Blocks() as voice:
     gr.Markdown("Try Voice Chat from the link below:")
     gr.HTML('<a href="https://huggingface.co/spaces/KingNish/Voicee" target="_blank" class="custom-button">Open Voice Chat</a>')
 
+image_gen_pro = gr.HTML("<iframe src='https://kingnish-image-gen-pro.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
+flux_fast = gr.HTML("<iframe src='https://prodia-flux-1-dev.hf.space' width='100%' height='2000px' style='border-radius: 8px;'></iframe>")
+
 # Image engine block
 with gr.Blocks() as image:
     gr.Markdown("### 🖼️ Image Engine", elem_classes="tab-header")
-    gr.Markdown("Image processing features coming soon!")
+    gr.TabbedInterface(['flux_fast', 'image_gen_pro'], ['High Quality Image Gen'],['Image gen and editing'])     
+    
 
 # Video engine block
 with gr.Blocks() as video:
     gr.Markdown("### 🎥 Video Engine", elem_classes="tab-header")
-    gr.Markdown("Video processing features coming soon!")
+    gr.HTML("<iframe src='https://kingnish-instant-video.hf.space' width='100%' height='3000px' style='border-radius: 8px;'></iframe>")
+
 
 # Main application block
 with gr.Blocks(theme=theme, title="OpenGPT 4o DEMO") as demo:
