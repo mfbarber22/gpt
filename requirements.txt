@@ -18,3 +18,4 @@ groq
 opencv-python
 qwen-vl-utils
 av
+gradio --pre
