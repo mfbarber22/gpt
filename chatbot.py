@@ -313,8 +313,7 @@ def model_inference( user_prompt, chat_history):
                     yield gr.Image(image[1])
                 except:
                     client_flux = InferenceClient("black-forest-labs/FLUX.1-schnell")
-                    seed = random.randint(0,999999)
-                    image = client_flux.text_to_image(query, negative_prompt=f"{seed}")
+                    image = client_flux.text_to_image(query)
                     yield gr.Image(image)
                     
 
