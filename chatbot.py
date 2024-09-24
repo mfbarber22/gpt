@@ -439,7 +439,6 @@ chatbot = gr.Chatbot(
     label="OpenGPT-4o",
     avatar_images=[None, BOT_AVATAR],
     show_copy_button=True,
-    likeable=True,
     layout="panel",
     height=400,
 )
