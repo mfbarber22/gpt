@@ -148,6 +148,51 @@ def video_gen(prompt):
     client = Client("KingNish/Instant-Video")
     return client.predict(prompt, api_name="/instant_video")
 
+@spaces.GPU(duration=60, queue=False)
+def qwen_inference(user_prompt, chat_history):
+    images = []
+    text_input = user_prompt["text"]
+
+    # Handle multiple image uploads
+    if user_prompt["files"]:
+        images.extend(user_prompt["files"])
+    else:
+        for hist in chat_history:
+            if type(hist[0]) == tuple:
+                images.extend(hist[0]) 
+
+    # System Prompt (Similar to LLaVA)
+    SYSTEM_PROMPT = "You are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way."
+
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] 
+
+    for image in images:
+        if image.endswith(video_extensions):
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "video", "video": image},
+                ]
+            })
+
+        if image.endswith(tuple([i for i, f in image_extensions.items()])):
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": image},
+                ]
+            })
+
+    # Add user text input 
+    messages.append({
+        "role": "user",
+        "content": [
+            {"type": "text", "text": text_input}
+        ]
+    })
+
+    return messages
+
 image_extensions = Image.registered_extensions()
 video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
 
@@ -157,53 +202,8 @@ client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
 client_llama = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct")
 client_mistral_nemo = InferenceClient("mistralai/Mistral-Nemo-Instruct-2407")
 
+@spaces.GPU(duration=60, queue=False)
 def model_inference(user_prompt, chat_history):
-    
-    @spaces.GPU(duration=60, queue=False)
-    def qwen_inference(user_prompt, chat_history):
-        images = []
-        text_input = user_prompt["text"]
-    
-        # Handle multiple image uploads
-        if user_prompt["files"]:
-            images.extend(user_prompt["files"])
-        else:
-            for hist in chat_history:
-                if type(hist[0]) == tuple:
-                    images.extend(hist[0]) 
-    
-        # System Prompt (Similar to LLaVA)
-        SYSTEM_PROMPT = "You are OpenGPT 4o, an exceptionally capable and versatile AI assistant made by KingNish. Your task is to fulfill users query in best possible way. You are provided with image, videos and 3d structures as input with question your task is to give best possible detailed results to user according to their query. Reply the question asked by user properly and best possible way."
-    
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] 
-    
-        for image in images:
-            if image.endswith(video_extensions):
-                messages.append({
-                    "role": "user",
-                    "content": [
-                        {"type": "video", "video": image},
-                    ]
-                })
-    
-            if image.endswith(tuple([i for i, f in image_extensions.items()])):
-                messages.append({
-                    "role": "user",
-                    "content": [
-                        {"type": "image", "image": image},
-                    ]
-                })
-    
-        # Add user text input 
-        messages.append({
-            "role": "user",
-            "content": [
-                {"type": "text", "text": text_input}
-            ]
-        })
-    
-        return messages
-    
     if user_prompt["files"]:
         messages = qwen_inference(user_prompt, chat_history)
         text = processor.apply_chat_template(
