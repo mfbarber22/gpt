@@ -54,13 +54,13 @@ with gr.Blocks(css=custom_css) as chat:
     gr.Markdown("### 💬 OpenGPT 4o Chat", elem_classes="tab-header")
     gr.ChatInterface(
         fn=model_inference,
-        chatbot=chatbot,
         examples=EXAMPLES,
         multimodal=True,
         cache_examples=False,
         autofocus=False,
         concurrency_limit=10
     )
+#         chatbot=chatbot, removed this line
 
 # Voice chat block
 with gr.Blocks() as voice:
