@@ -202,7 +202,6 @@ client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
 client_llama = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct")
 client_mistral_nemo = InferenceClient("mistralai/Mistral-Nemo-Instruct-2407")
 
-@spaces.GPU(duration=60, queue=False)
 def model_inference(user_prompt, chat_history):
     if user_prompt["files"]:
         messages = qwen_inference(user_prompt, chat_history)
