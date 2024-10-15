@@ -206,7 +206,13 @@ def qwen_inference(user_prompt, chat_history):
     )
     generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
 
-    return streamer, generation_kwargs
+    thread = Thread(target=model.generate, kwargs=generation_kwargs)
+    thread.start()
+
+    buffer = ""
+    for new_text in streamer:
+        buffer += new_text
+        yield buffer
 
 image_extensions = Image.registered_extensions()
 video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
@@ -219,15 +225,9 @@ client_mistral_nemo = InferenceClient("mistralai/Mistral-Nemo-Instruct-2407")
 
 def model_inference(user_prompt, chat_history):
     if user_prompt["files"]:
-        streamer, generation_kwargs = qwen_inference(user_prompt, chat_history)
-
-        thread = Thread(target=model.generate, kwargs=generation_kwargs)
-        thread.start()
-    
-        buffer = ""
-        for new_text in streamer:
-            buffer += new_text
-            yield buffer
+        
+        for chunk in qwen_inference(user_prompt, chat_history):
+            yield chunk
 
     else: 
         func_caller = []
