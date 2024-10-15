@@ -4,7 +4,7 @@ emoji: 🔥
 colorFrom: blue
 colorTo: indigo
 sdk: gradio
-sdk_version: 4.44.0
+sdk_version: 4.37.2
 app_file: app.py
 pinned: true
 short_description: GPT 4o like bot.
