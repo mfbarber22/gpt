@@ -218,7 +218,7 @@ image_extensions = Image.registered_extensions()
 video_extensions = ("avi", "mp4", "mov", "mkv", "flv", "wmv", "mjpeg", "wav", "gif", "webm", "m4v", "3gp")
 
 # Initialize inference clients for different models
-client_mistral = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3")
+client_mistral = InferenceClient("NousResearch/Hermes-3-Llama-3.1-8B")
 client_mixtral = InferenceClient("NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO")
 client_llama = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct")
 client_mistral_nemo = InferenceClient("mistralai/Mistral-Nemo-Instruct-2407")
@@ -251,6 +251,7 @@ def model_inference(user_prompt, chat_history):
     
         response = client_mistral.chat_completion(func_caller, max_tokens=200)
         response = str(response)
+        print(response)
         try:
             response = response[response.find("{"):response.index("</")]
         except:
